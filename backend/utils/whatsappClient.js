@@ -1,122 +1,175 @@
-import pkg from 'whatsapp-web.js';
-const { Client, RemoteAuth } = pkg;
-import { MongoStore } from 'wwebjs-mongo';
-import mongoose from 'mongoose';
-import qrcode from 'qrcode'; // Real image generator
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
+import pino from 'pino';
+import qrcode from 'qrcode';
 
-// No longer relying on ephemeral server disk space for local storage.
-// Sessions will now be saved securely into MongoDB!
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const AUTH_DATA_PATH = path.resolve(__dirname, '../.baileys_auth');
 
-let whatsappClient;
 export let isReady = false;
-export let latestQRData = null; // Store the QR code to be served via HTTP
+export let latestQRData = null;
+let sock;
 
-export const initializeWhatsApp = () => {
-    // Mount MongoDB Store to save session states permanently over ephemeral reboots
-    const store = new MongoStore({ mongoose: mongoose });
+// Cloud API configuration (used on Vercel / serverless)
+const getCloudConfig = () => {
+    const token =
+        process.env.WHATSAPP_CLOUD_ACCESS_TOKEN ||
+        process.env.WHATSAPP_CLOUD_TOKEN ||
+        '';
+    const phoneId = process.env.WHATSAPP_CLOUD_PHONE_ID || '';
+    return { token, phoneId, useCloudApi: !!(token && phoneId) };
+};
 
-    whatsappClient = new Client({
-        authStrategy: new RemoteAuth({
-            clientId: 'eyestyle-bot',
-            store: store,
-            backupSyncIntervalMs: 300000 // Backup session sync every 5 minutes
-        }),
-        // Crucial fix: The WA web version updates frequently, causing mid-boot page navigations that instantly crash the Node process! 
-        // We bypass this entirely by pinning a remote fixed version of the WhatsApp Web HTML.
-        webVersionCache: {
-            type: 'remote',
-            remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
-        },
-        puppeteer: {
-            executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-            args: [
-                '--no-sandbox', 
-                '--disable-setuid-sandbox', 
-                '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--no-first-run',
-                '--disable-accelerated-2d-canvas'
-            ]
+export const initializeWhatsApp = async () => {
+    // Do not initialize the local socket client on Vercel; it needs a persistent process.
+    if (process.env.VERCEL === '1') {
+        console.log('Baileys Web client skipped on Vercel; using Cloud API if configured.');
+        return;
+    }
+
+    // Ensures auth storage exists locally. 
+    // Render will store this until Manual Deploy, acting identically to physical memory!
+    if (!fs.existsSync(AUTH_DATA_PATH)) {
+        fs.mkdirSync(AUTH_DATA_PATH, { recursive: true });
+    }
+
+    const { state, saveCreds } = await useMultiFileAuthState(AUTH_DATA_PATH);
+    const { version } = await fetchLatestBaileysVersion();
+    
+    sock = makeWASocket({
+        version,
+        auth: state,
+        printQRInTerminal: false,
+        logger: pino({ level: 'silent' }), // Hide extremely aggressive Baileys debug logs
+        browser: ['Eyestyle Order Bot', 'Chrome', '1.0.0']
+    });
+
+    sock.ev.on('creds.update', saveCreds);
+
+    sock.ev.on('connection.update', async (update) => {
+        const { connection, lastDisconnect, qr } = update;
+        
+        if (qr) {
+            try {
+                latestQRData = await qrcode.toDataURL(qr);
+                console.log('\n--- SCAN THIS QR CODE IN WHATSAPP TO LINK BOT ---');
+                const renderExternalUrl = process.env.RENDER_EXTERNAL_URL || process.env.SERVICE_URL || '';
+                const port = process.env.PORT || 5000;
+                const qrUrl = renderExternalUrl
+                    ? `${renderExternalUrl.replace(/\/$/, '')}/api/whatsapp/qr`
+                    : `http://localhost:${port}/api/whatsapp/qr`;
+                console.log(`📌 PLEASE GO TO: ${qrUrl}`);
+                console.log('--------------------------------------------------\n');
+            } catch (err) {
+                console.error('Failed to generate QR image', err);
+            }
         }
-    });
 
-    whatsappClient.on('remote_session_saved', () => {
-        console.log('✅ WhatsApp MongoDB Session securely saved/synced!');
-    });
-
-    whatsappClient.on('qr', async (qr) => {
-        try {
-            // Generate a real Base64 image
-            latestQRData = await qrcode.toDataURL(qr);
-            console.log('\n--- SCAN THIS QR CODE IN WHATSAPP TO LINK BOT ---');
-            // Render/Render-like platforms expose a public URL; fallback to localhost for local dev.
-            const renderExternalUrl = process.env.RENDER_EXTERNAL_URL || process.env.SERVICE_URL || '';
-            const port = process.env.PORT || 5000;
-            const qrUrl = renderExternalUrl
-                ? `${renderExternalUrl.replace(/\/$/, '')}/api/whatsapp/qr`
-                : `http://localhost:${port}/api/whatsapp/qr`;
-            console.log(`📌 PLEASE GO TO: ${qrUrl}`);
-            console.log('--------------------------------------------------\n');
-        } catch (err) {
-            console.error('Failed to generate QR image', err);
+        if (connection === 'close') {
+            isReady = false;
+            // 401 corresponds to "loggedOut"
+            const statusCode = lastDisconnect?.error?.output?.statusCode;
+            const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+            
+            console.log('❌ WhatsApp connection closed. Reconnecting:', shouldReconnect);
+            
+            if (shouldReconnect) {
+                setTimeout(() => initializeWhatsApp(), 3000);
+            } else {
+                console.log('User manually logged out in their phone app! Deleting old auth files...');
+                if (fs.existsSync(AUTH_DATA_PATH)) {
+                    fs.rmSync(AUTH_DATA_PATH, { recursive: true, force: true });
+                }
+                latestQRData = null;
+                setTimeout(() => initializeWhatsApp(), 5000);
+            }
+        } else if (connection === 'open') {
+            console.log('✅ Lightweight Baileys Web Client is magically Ready!');
+            isReady = true;
+            latestQRData = null;
         }
-    });
-
-    whatsappClient.on('ready', () => {
-        console.log('✅ WhatsApp Web Client is Ready!');
-        isReady = true;
-        latestQRData = null; // Clear the QR once authenticated
-    });
-
-    whatsappClient.on('auth_failure', () => {
-        console.error('❌ WhatsApp Web Authentication Failed!');
-        isReady = false;
-    });
-
-    whatsappClient.on('disconnected', (reason) => {
-        console.log('❌ WhatsApp Web Client Disconnected:', reason);
-        isReady = false;
-    });
-
-    whatsappClient.initialize().catch((err) => {
-        console.error('WhatsApp initialization failed:', err);
-        isReady = false;
     });
 };
 
 /**
- * Sends a WhatsApp message to the specified phone number via the local/Render headless browser bot.
- * @param {string} phone - The recipient phone number (should contain country code, e.g., '923085961662').
- * @param {string} message - The message text.
- * @returns {Promise<boolean>} - True if sent successfully, false otherwise.
+ * Sends using official WhatsApp Cloud API (recommended for Vercel / production)
+ */
+const sendViaCloudApi = async (phone, message) => {
+    try {
+        const { token, phoneId, useCloudApi } = getCloudConfig();
+
+        if (!useCloudApi) {
+            console.error('WhatsApp Cloud API is not configured.');
+            return false;
+        }
+
+        const formattedPhone = phone.replace(/\D/g, '');
+        if (!formattedPhone) return false;
+
+        const url = `https://graph.facebook.com/v20.0/${phoneId}/messages`;
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+                messaging_product: 'whatsapp',
+                to: formattedPhone,
+                type: 'text',
+                text: { body: message },
+            }),
+        });
+
+        if (!res.ok) {
+            console.error('WhatsApp Cloud API error:', res.status);
+            return false;
+        }
+        return true;
+    } catch (err) {
+        console.error('Failed to send WhatsApp Cloud message:', err);
+        return false;
+    }
+};
+
+/**
+ * Main export: Instantly formats phone number correctly and dispatches via active socket.
  */
 export const sendWhatsAppMessage = async (phone, message) => {
-    if (!isReady || !whatsappClient) {
-        console.error('Cannot send message: WhatsApp client is not ready.');
+    // Vercel fallback checks
+    const { useCloudApi } = getCloudConfig();
+    if (process.env.VERCEL === '1' || useCloudApi) {
+        return sendViaCloudApi(phone, message);
+    }
+
+    if (!isReady || !sock) {
+        console.error('Cannot send message: Baileys socket is not ready yet.');
         return false;
     }
 
     try {
-        // Format the phone number (whatsapp-web.js expects <number>@c.us)
-        // Ensure no '+' sign or spaces
         let formattedPhone = phone.replace(/\D/g, '');
         
-        // Auto-fix Pakistani local numbers (e.g., 03196200962 -> 923196200962)
-        // This ensures local clients don't accidentally fail to receive messages!
+        // Auto-fix Pakistani local numbers beautifully (e.g., 03196200962 -> 923196200962)
         if (formattedPhone.startsWith('03') && formattedPhone.length === 11) {
             formattedPhone = '92' + formattedPhone.substring(1);
         }
         if (!formattedPhone) {
-            console.error('Cannot send message: phone number is empty after formatting.');
+            console.error('Phone length is invalid after stripping.');
             return false;
         }
-        const chatId = `${formattedPhone}@c.us`;
+        
+        // Native WhatsApp Web API strings end in @s.whatsapp.net natively
+        const jid = `${formattedPhone}@s.whatsapp.net`;
 
-        await whatsappClient.sendMessage(chatId, message);
-        console.log(`WhatsApp message sent to ${phone} `);
+        await sock.sendMessage(jid, { text: message });
+        console.log(`✅ Pure Socket WhatsApp message successfully blasted to ${phone}!`);
         return true;
     } catch (error) {
-        console.error(`Failed to send WhatsApp message to ${phone}: `, error);
+        console.error(`Failed to send Baileys message to ${phone}: `, error);
         return false;
     }
 };
