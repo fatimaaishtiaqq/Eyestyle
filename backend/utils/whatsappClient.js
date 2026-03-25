@@ -13,15 +13,7 @@ export let isReady = false;
 export let latestQRData = null;
 let sock;
 
-// Cloud API configuration (used on Vercel / serverless)
-const getCloudConfig = () => {
-    const token =
-        process.env.WHATSAPP_CLOUD_ACCESS_TOKEN ||
-        process.env.WHATSAPP_CLOUD_TOKEN ||
-        '';
-    const phoneId = process.env.WHATSAPP_CLOUD_PHONE_ID || '';
-    return { token, phoneId, useCloudApi: !!(token && phoneId) };
-};
+// Cloud API permanently abandoned in favor of invincible Baileys WebSockets
 
 export const initializeWhatsApp = async () => {
     // Do not initialize the local socket client on Vercel; it needs a persistent process.
@@ -94,46 +86,6 @@ export const initializeWhatsApp = async () => {
     });
 };
 
-/**
- * Sends using official WhatsApp Cloud API (recommended for Vercel / production)
- */
-const sendViaCloudApi = async (phone, message) => {
-    try {
-        const { token, phoneId, useCloudApi } = getCloudConfig();
-
-        if (!useCloudApi) {
-            console.error('WhatsApp Cloud API is not configured.');
-            return false;
-        }
-
-        const formattedPhone = phone.replace(/\D/g, '');
-        if (!formattedPhone) return false;
-
-        const url = `https://graph.facebook.com/v20.0/${phoneId}/messages`;
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                messaging_product: 'whatsapp',
-                to: formattedPhone,
-                type: 'text',
-                text: { body: message },
-            }),
-        });
-
-        if (!res.ok) {
-            console.error('WhatsApp Cloud API error:', res.status);
-            return false;
-        }
-        return true;
-    } catch (err) {
-        console.error('Failed to send WhatsApp Cloud message:', err);
-        return false;
-    }
-};
 
 /**
  * Strict Message Queue to prevent Concurrent MAC Encryption Collisions and Anti-Spam Drops
@@ -166,11 +118,6 @@ const processQueue = async () => {
  * Main export: Instantly formats phone number correctly and queues it for safe sending.
  */
 export const sendWhatsAppMessage = async (phone, message) => {
-    // Vercel fallback checks
-    const { useCloudApi } = getCloudConfig();
-    if (process.env.VERCEL === '1' || useCloudApi) {
-        return sendViaCloudApi(phone, message);
-    }
 
     if (!isReady || !sock) {
         console.error('Cannot send message: Baileys socket is not ready yet.');
