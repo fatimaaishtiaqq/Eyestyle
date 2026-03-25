@@ -1,5 +1,5 @@
-// Use VITE_API_BASE_URL if set; otherwise production uses the actual user backend URL; dev uses localhost:5000 to avoid proxy issues with uploads
-const rawBase = (import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://luxury-ecommerce-backend.vercel.app' : 'http://localhost:5000')).trim();
+// Use VITE_API_BASE_URL if set; otherwise production uses the newly deployed Render backend URL; dev uses localhost:5000 to avoid proxy issues with uploads
+const rawBase = (import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://eyestyle-backend.onrender.com' : 'http://localhost:5000')).trim();
 const API_BASE_URL = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
 
 // Simple in-memory cache to avoid refetching the same resources repeatedly
