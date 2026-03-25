@@ -136,7 +136,34 @@ const sendViaCloudApi = async (phone, message) => {
 };
 
 /**
- * Main export: Instantly formats phone number correctly and dispatches via active socket.
+ * Strict Message Queue to prevent Concurrent MAC Encryption Collisions and Anti-Spam Drops
+ */
+let messageQueue = [];
+let isSending = false;
+
+const processQueue = async () => {
+    if (isSending || messageQueue.length === 0) return;
+    isSending = true;
+    
+    const { jid, message, phone, resolve } = messageQueue.shift();
+    try {
+        await sock.sendMessage(jid, { text: message });
+        console.log(`✅ Pure Socket WhatsApp message safely delivered to ${phone}!`);
+        resolve(true);
+    } catch (err) {
+        console.error(`❌ Failed to send Baileys message to ${phone}: `, err);
+        resolve(false);
+    }
+    
+    // Crucial 2-second mandatory cooldown between messages to prevent WhatsApp auto-logout drops
+    setTimeout(() => {
+        isSending = false;
+        processQueue();
+    }, 2000);
+};
+
+/**
+ * Main export: Instantly formats phone number correctly and queues it for safe sending.
  */
 export const sendWhatsAppMessage = async (phone, message) => {
     // Vercel fallback checks
@@ -150,26 +177,24 @@ export const sendWhatsAppMessage = async (phone, message) => {
         return false;
     }
 
-    try {
-        let formattedPhone = phone.replace(/\D/g, '');
-        
-        // Auto-fix Pakistani local numbers beautifully (e.g., 03196200962 -> 923196200962)
-        if (formattedPhone.startsWith('03') && formattedPhone.length === 11) {
-            formattedPhone = '92' + formattedPhone.substring(1);
-        }
-        if (!formattedPhone) {
-            console.error('Phone length is invalid after stripping.');
-            return false;
-        }
-        
-        // Native WhatsApp Web API strings end in @s.whatsapp.net natively
-        const jid = `${formattedPhone}@s.whatsapp.net`;
-
-        await sock.sendMessage(jid, { text: message });
-        console.log(`✅ Pure Socket WhatsApp message successfully blasted to ${phone}!`);
-        return true;
-    } catch (error) {
-        console.error(`Failed to send Baileys message to ${phone}: `, error);
+    // Format the phone number cleanly
+    let formattedPhone = phone.replace(/\D/g, '');
+    
+    // Auto-fix Pakistani local numbers beautifully (e.g., 03196200962 -> 923196200962)
+    if (formattedPhone.startsWith('03') && formattedPhone.length === 11) {
+        formattedPhone = '92' + formattedPhone.substring(1);
+    }
+    if (!formattedPhone) {
+        console.error('Phone length is invalid after stripping.');
         return false;
     }
+    
+    // Native WhatsApp Web API strings end in @s.whatsapp.net natively
+    const jid = `${formattedPhone}@s.whatsapp.net`;
+
+    // Add to the queue and wait for resolution
+    return new Promise((resolve) => {
+        messageQueue.push({ jid, message, phone, resolve });
+        processQueue();
+    });
 };
