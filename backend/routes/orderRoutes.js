@@ -141,9 +141,12 @@ router.put('/:id/status', protect, admin, async (req, res) => {
                     if (req.body.trackingNumber) message += `\nTracking Number: ${req.body.trackingNumber}`;
                 } else if (req.body.status === 'delivered') {
                     message += `Your order *#${updatedOrder._id}* has been delivered! 🎉 Enjoy your purchase!`;
+                } else if (req.body.status === 'cancelled') {
+                    message += `We're sorry to inform you that your order *#${updatedOrder._id}* has been cancelled. 🚫 If you have any questions, please contact our support team.`;
                 }
 
-                if (req.body.status === 'processing' || req.body.status === 'shipped' || req.body.status === 'delivered') {
+                const validStatuses = ['processing', 'shipped', 'delivered', 'cancelled'];
+                if (validStatuses.includes(req.body.status)) {
                     console.log(`[WhatsApp Bot] Attempting to send status update to ${customerPhone} for order ${updatedOrder._id}`);
                     // AWAIT the message so Vercel does not kill the serverless function prematurely
                     try {
