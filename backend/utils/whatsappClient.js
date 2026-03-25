@@ -11,23 +11,7 @@ let whatsappClient;
 export let isReady = false;
 export let latestQRData = null; // Store the QR code to be served via HTTP
 
-// Cloud API configuration (used on Vercel / serverless)
-const getCloudConfig = () => {
-    const token =
-        process.env.WHATSAPP_CLOUD_ACCESS_TOKEN ||
-        process.env.WHATSAPP_CLOUD_TOKEN ||
-        '';
-    const phoneId = process.env.WHATSAPP_CLOUD_PHONE_ID || '';
-    return { token, phoneId, useCloudApi: !!(token && phoneId) };
-};
-
 export const initializeWhatsApp = () => {
-    // Do not initialize the headless client in serverless / Vercel; it needs a long‑running process.
-    if (process.env.VERCEL === '1') {
-        console.log('WhatsApp Web client initialization skipped on Vercel; using Cloud API if configured.');
-        return;
-    }
-
     // Mount MongoDB Store to save session states permanently over ephemeral reboots
     const store = new MongoStore({ mongoose: mongoose });
 
@@ -37,6 +21,12 @@ export const initializeWhatsApp = () => {
             store: store,
             backupSyncIntervalMs: 300000 // Backup session sync every 5 minutes
         }),
+        // Crucial fix: The WA web version updates frequently, causing mid-boot page navigations that instantly crash the Node process! 
+        // We bypass this entirely by pinning a remote fixed version of the WhatsApp Web HTML.
+        webVersionCache: {
+            type: 'remote',
+            remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html',
+        },
         puppeteer: {
             executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
             args: [
@@ -44,7 +34,8 @@ export const initializeWhatsApp = () => {
                 '--disable-setuid-sandbox', 
                 '--disable-dev-shm-usage',
                 '--disable-gpu',
-                '--no-first-run'
+                '--no-first-run',
+                '--disable-accelerated-2d-canvas'
             ]
         }
     });
@@ -85,7 +76,6 @@ export const initializeWhatsApp = () => {
     whatsappClient.on('disconnected', (reason) => {
         console.log('❌ WhatsApp Web Client Disconnected:', reason);
         isReady = false;
-        // Optionally, try to reinitialize here
     });
 
     whatsappClient.initialize().catch((err) => {
@@ -95,63 +85,12 @@ export const initializeWhatsApp = () => {
 };
 
 /**
- * Sends a WhatsApp message to the specified phone number.
+ * Sends a WhatsApp message to the specified phone number via the local/Render headless browser bot.
  * @param {string} phone - The recipient phone number (should contain country code, e.g., '923085961662').
  * @param {string} message - The message text.
  * @returns {Promise<boolean>} - True if sent successfully, false otherwise.
  */
-// Send using official WhatsApp Cloud API (recommended for Vercel / production)
-const sendViaCloudApi = async (phone, message) => {
-    try {
-        const { token, phoneId, useCloudApi } = getCloudConfig();
-
-        if (!useCloudApi) {
-            console.error('WhatsApp Cloud API is not configured (missing WHATSAPP_CLOUD_TOKEN or WHATSAPP_CLOUD_PHONE_ID).');
-            return false;
-        }
-
-        const formattedPhone = phone.replace(/\D/g, '');
-        if (!formattedPhone) {
-            console.error('Cannot send WhatsApp Cloud message: phone number is empty after formatting.');
-            return false;
-        }
-
-        const url = `https://graph.facebook.com/v20.0/${phoneId}/messages`;
-        const res = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-                messaging_product: 'whatsapp',
-                to: formattedPhone,
-                type: 'text',
-                text: { body: message },
-            }),
-        });
-
-        if (!res.ok) {
-            const text = await res.text().catch(() => '');
-            console.error('WhatsApp Cloud API error:', res.status, text);
-            return false;
-        }
-
-        console.log(`WhatsApp Cloud message sent to ${phone}`);
-        return true;
-    } catch (err) {
-        console.error('Failed to send WhatsApp Cloud message:', err);
-        return false;
-    }
-};
-
 export const sendWhatsAppMessage = async (phone, message) => {
-    // On Vercel / production, prefer Cloud API if configured
-    const { useCloudApi } = getCloudConfig();
-    if (process.env.VERCEL === '1' || useCloudApi) {
-        return sendViaCloudApi(phone, message);
-    }
-
     if (!isReady || !whatsappClient) {
         console.error('Cannot send message: WhatsApp client is not ready.');
         return false;
