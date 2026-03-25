@@ -75,6 +75,25 @@ app.get('/api/whatsapp/qr', (req, res) => {
     `);
 });
 
+// Diagnostic Endpoints for WhatsApp
+app.get('/api/whatsapp/status', (req, res) => {
+    res.json({ 
+        connected: isReady,
+        waitingForScan: !!latestQRData,
+        message: isReady ? "WhatsApp is fully connected!" : (latestQRData ? "Waiting for QR scan" : "Initializing browser...")
+    });
+});
+
+app.post('/api/whatsapp/test', async (req, res) => {
+    const { phone } = req.body;
+    if (!phone) return res.status(400).json({ success: false, message: "Please provide a 'phone' number in the JSON body." });
+    
+    const { sendWhatsAppMessage } = await import('./utils/whatsappClient.js');
+    const success = await sendWhatsAppMessage(phone, "🤖 *EYESTYLE SYSTEM TEST*\n\nHello! If you are seeing this, your WhatsApp Bot is successfully connected and capable of sending messages perfectly!");
+    
+    res.json({ success, message: success ? "Test message sent!" : "Failed to send test message. Check server logs." });
+});
+
 app.get('/', (req, res) => {
     res.send('Luxury E-Commerce API is running...');
 });

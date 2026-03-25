@@ -28,7 +28,19 @@ export const initializeWhatsApp = () => {
         authStrategy: new LocalAuth(),
         puppeteer: {
             executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-            args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+            args: [
+                '--no-sandbox', 
+                '--disable-setuid-sandbox', 
+                '--disable-dev-shm-usage',
+                '--disable-gpu',
+                '--no-first-run'
+            ]
+        },
+        // Forces whatsapp-web.js to use the latest live WhatsApp Web version. 
+        // This is the #1 fix for "scans QR but instantly fails or logs out"
+        webVersionCache: {
+            type: 'remote',
+            strict: true
         }
     });
 
