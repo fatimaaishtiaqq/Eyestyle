@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
 import pino from 'pino';
 import qrcode from 'qrcode';
+import { connectDB } from '../server.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,37 +14,46 @@ const AUTH_DATA_PATH = path.resolve(__dirname, '../.baileys_auth');
 // MongoDB Schema for storing Baileys JSON state securely across ephemeral server restarts
 const AuthBackupSchema = new mongoose.Schema({
     _id: { type: String, required: true },
-    files: { type: Map, of: String }
+    files: { type: mongoose.Schema.Types.Mixed, default: {} } // Pure JS Object to prevent Mongoose ES6 Map truncation 
 });
 const AuthBackup = mongoose.models.WhatsAppAuthBackup || mongoose.model('WhatsAppAuthBackup', AuthBackupSchema);
 
+const ensureDB = async () => {
+    if (mongoose.connection.readyState !== 1) {
+        await connectDB();
+    }
+};
+
 const backupAuthToMongo = async () => {
     if (!fs.existsSync(AUTH_DATA_PATH)) return;
-    const filesMap = new Map();
+    await ensureDB();
+    const filesObj = {};
     try {
         const files = fs.readdirSync(AUTH_DATA_PATH);
         for (const file of files) {
             if (file.endsWith('.json')) {
                 const filePath = path.join(AUTH_DATA_PATH, file);
                 try {
-                    filesMap.set(file, fs.readFileSync(filePath, 'utf8'));
+                    filesObj[file] = fs.readFileSync(filePath, 'utf8');
                 } catch(e) {}
             }
         }
-        await AuthBackup.findByIdAndUpdate('baileys_session', { files: filesMap }, { upsert: true });
+        await AuthBackup.findByIdAndUpdate('baileys_session', { files: filesObj }, { upsert: true });
+        // Silently succeeded backup
     } catch (err) {
         console.error('Failed to backup Auth to Mongo:', err);
     }
 };
 
 const restoreAuthFromMongo = async () => {
+    await ensureDB();
     try {
         const doc = await AuthBackup.findById('baileys_session');
-        if (doc && doc.files && doc.files.size > 0) {
+        if (doc && doc.files && Object.keys(doc.files).length > 0) {
             if (!fs.existsSync(AUTH_DATA_PATH)) {
                 fs.mkdirSync(AUTH_DATA_PATH, { recursive: true });
             }
-            for (const [filename, content] of doc.files.entries()) {
+            for (const [filename, content] of Object.entries(doc.files)) {
                 fs.writeFileSync(path.join(AUTH_DATA_PATH, filename), content);
             }
             console.log('📦 Baileys session perfectly restored from MongoDB.');
