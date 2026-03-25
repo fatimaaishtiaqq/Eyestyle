@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import mongoose from 'mongoose';
 import { makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } from '@whiskeysockets/baileys';
 import pino from 'pino';
 import qrcode from 'qrcode';
@@ -9,23 +10,67 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const AUTH_DATA_PATH = path.resolve(__dirname, '../.baileys_auth');
 
+// MongoDB Schema for storing Baileys JSON state securely across ephemeral server restarts
+const AuthBackupSchema = new mongoose.Schema({
+    _id: { type: String, required: true },
+    files: { type: Map, of: String }
+});
+const AuthBackup = mongoose.models.WhatsAppAuthBackup || mongoose.model('WhatsAppAuthBackup', AuthBackupSchema);
+
+const backupAuthToMongo = async () => {
+    if (!fs.existsSync(AUTH_DATA_PATH)) return;
+    const filesMap = new Map();
+    try {
+        const files = fs.readdirSync(AUTH_DATA_PATH);
+        for (const file of files) {
+            if (file.endsWith('.json')) {
+                const filePath = path.join(AUTH_DATA_PATH, file);
+                try {
+                    filesMap.set(file, fs.readFileSync(filePath, 'utf8'));
+                } catch(e) {}
+            }
+        }
+        await AuthBackup.findByIdAndUpdate('baileys_session', { files: filesMap }, { upsert: true });
+    } catch (err) {
+        console.error('Failed to backup Auth to Mongo:', err);
+    }
+};
+
+const restoreAuthFromMongo = async () => {
+    try {
+        const doc = await AuthBackup.findById('baileys_session');
+        if (doc && doc.files && doc.files.size > 0) {
+            if (!fs.existsSync(AUTH_DATA_PATH)) {
+                fs.mkdirSync(AUTH_DATA_PATH, { recursive: true });
+            }
+            for (const [filename, content] of doc.files.entries()) {
+                fs.writeFileSync(path.join(AUTH_DATA_PATH, filename), content);
+            }
+            console.log('📦 Baileys session perfectly restored from MongoDB.');
+            return true;
+        }
+    } catch (err) {
+        console.error('Failed to restore Auth from Mongo:', err);
+    }
+    return false;
+};
+
 export let isReady = false;
 export let latestQRData = null;
 let sock;
 
-// Cloud API permanently abandoned in favor of invincible Baileys WebSockets
-
 export const initializeWhatsApp = async () => {
-    // Do not initialize the local socket client on Vercel; it needs a persistent process.
     if (process.env.VERCEL === '1') {
-        console.log('Baileys Web client skipped on Vercel; using Cloud API if configured.');
+        console.log('Baileys Web client skipped on Vercel');
         return;
     }
 
-    // Ensures auth storage exists locally. 
-    // Render will store this until Manual Deploy, acting identically to physical memory!
+    // Always attempt to restore from MongoDB if the local Render container was wiped
     if (!fs.existsSync(AUTH_DATA_PATH)) {
-        fs.mkdirSync(AUTH_DATA_PATH, { recursive: true });
+        await restoreAuthFromMongo();
+        if (!fs.existsSync(AUTH_DATA_PATH)) {
+            fs.mkdirSync(AUTH_DATA_PATH, { recursive: true });
+        }
     }
 
     const { state, saveCreds } = await useMultiFileAuthState(AUTH_DATA_PATH);
@@ -39,7 +84,11 @@ export const initializeWhatsApp = async () => {
         browser: ['Eyestyle Order Bot', 'Chrome', '1.0.0']
     });
 
-    sock.ev.on('creds.update', saveCreds);
+    sock.ev.on('creds.update', async () => {
+        await saveCreds();
+        // Backup vital credentials directly to MongoDB securely
+        await backupAuthToMongo();
+    });
 
     sock.ev.on('connection.update', async (update) => {
         const { connection, lastDisconnect, qr } = update;
@@ -48,12 +97,9 @@ export const initializeWhatsApp = async () => {
             try {
                 latestQRData = await qrcode.toDataURL(qr);
                 console.log('\n--- SCAN THIS QR CODE IN WHATSAPP TO LINK BOT ---');
-                const renderExternalUrl = process.env.RENDER_EXTERNAL_URL || process.env.SERVICE_URL || '';
                 const port = process.env.PORT || 5000;
-                const qrUrl = renderExternalUrl
-                    ? `${renderExternalUrl.replace(/\/$/, '')}/api/whatsapp/qr`
-                    : `http://localhost:${port}/api/whatsapp/qr`;
-                console.log(`📌 PLEASE GO TO: ${qrUrl}`);
+                const renderExternalUrl = process.env.RENDER_EXTERNAL_URL || process.env.SERVICE_URL || `http://localhost:${port}`;
+                console.log(`📌 PLEASE GO TO: ${renderExternalUrl.replace(/\/$/, '')}/api/whatsapp/qr`);
                 console.log('--------------------------------------------------\n');
             } catch (err) {
                 console.error('Failed to generate QR image', err);
@@ -62,7 +108,6 @@ export const initializeWhatsApp = async () => {
 
         if (connection === 'close') {
             isReady = false;
-            // 401 corresponds to "loggedOut"
             const statusCode = lastDisconnect?.error?.output?.statusCode;
             const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
             
@@ -72,9 +117,10 @@ export const initializeWhatsApp = async () => {
                 setTimeout(() => initializeWhatsApp(), 3000);
             } else {
                 console.log('User manually logged out in their phone app! Deleting old auth files...');
-                if (fs.existsSync(AUTH_DATA_PATH)) {
-                    fs.rmSync(AUTH_DATA_PATH, { recursive: true, force: true });
-                }
+                if (fs.existsSync(AUTH_DATA_PATH)) fs.rmSync(AUTH_DATA_PATH, { recursive: true, force: true });
+                try {
+                    await AuthBackup.deleteOne({ _id: 'baileys_session' });
+                } catch(err) {}
                 latestQRData = null;
                 setTimeout(() => initializeWhatsApp(), 5000);
             }
@@ -82,10 +128,11 @@ export const initializeWhatsApp = async () => {
             console.log('✅ Lightweight Baileys Web Client is magically Ready!');
             isReady = true;
             latestQRData = null;
+            // Backup the completed open session payload to MongoDB
+            await backupAuthToMongo();
         }
     });
 };
-
 
 /**
  * Strict Message Queue to prevent Concurrent MAC Encryption Collisions and Anti-Spam Drops
@@ -114,20 +161,14 @@ const processQueue = async () => {
     }, 2000);
 };
 
-/**
- * Main export: Instantly formats phone number correctly and queues it for safe sending.
- */
 export const sendWhatsAppMessage = async (phone, message) => {
-
     if (!isReady || !sock) {
         console.error('Cannot send message: Baileys socket is not ready yet.');
         return false;
     }
 
-    // Format the phone number cleanly
     let formattedPhone = phone.replace(/\D/g, '');
     
-    // Auto-fix Pakistani local numbers beautifully (e.g., 03196200962 -> 923196200962)
     if (formattedPhone.startsWith('03') && formattedPhone.length === 11) {
         formattedPhone = '92' + formattedPhone.substring(1);
     }
@@ -136,10 +177,8 @@ export const sendWhatsAppMessage = async (phone, message) => {
         return false;
     }
     
-    // Native WhatsApp Web API strings end in @s.whatsapp.net natively
     const jid = `${formattedPhone}@s.whatsapp.net`;
 
-    // Add to the queue and wait for resolution
     return new Promise((resolve) => {
         messageQueue.push({ jid, message, phone, resolve });
         processQueue();
