@@ -1,0 +1,16 @@
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+.env
+backend/.env
+frontend/.env
+
+build/
+dist/
+
+npm-debug.log
+
+# WhatsApp Web JS Session Caches
+backend/.wwebjs_auth/
+backend/.wwebjs_cache/

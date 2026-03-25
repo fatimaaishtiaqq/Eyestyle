@@ -1,0 +1,287 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #717fe0;
+  --color-primary-hover: #6c7ae0;
+
+  --color-bg-white: #ffffff;
+  --color-bg-section: #f5f5f5;
+
+  --color-border: #e6e6e6;
+
+  --color-text-title: #000000;
+  --color-text-body: #222222;
+  --color-text-muted: #999999;
+
+  --font-serif: "Playfair Display", serif;
+  --font-sans: "Inter", sans-serif;
+
+  /* Spacing: section, container, vertical rhythm */
+  --space-section: 5rem;
+  --space-section-sm: 3rem;
+  --space-container: 1.5rem;
+  --space-container-lg: 2rem;
+  --space-block: 1.5rem;
+  --space-element: 0.75rem;
+}
+
+@layer base {
+
+  body {
+    background-color: var(--bg-color);
+    color: var(--text-body);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.8;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    transition: background-color 0.4s ease, color 0.4s ease;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--text-primary);
+  }
+}
+
+@layer utilities {
+
+  /* Glassmorphism System - Removed, mapped to flat */
+  .glass {
+    background: var(--surface-color);
+    border: 1px solid var(--surface-border);
+    border-radius: 4px;
+  }
+
+  .glass-panel {
+    background: var(--surface-color);
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  /* Shadows - Subtle Diffused only */
+  .shadow-premium {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  }
+
+  .shadow-glow {
+    box-shadow: none;
+    /* Disabled */
+  }
+
+  /* Animations & Transitions - Slight Lift only */
+  .hover-scale-luxury {
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+  }
+
+  .hover-scale-luxury:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Cards */
+  .card-premium {
+    background-color: var(--card-bg);
+    border-radius: 4px;
+    transition: transform 0.4s ease, box-shadow 0.4s ease;
+  }
+
+  .card-premium:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Buttons - CozaStore Style */
+  .btn-primary {
+    background-color: var(--text-primary);
+    color: var(--bg-color);
+    font-family: var(--font-sans);
+    font-weight: 500;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+
+  .btn-cta {
+    background-color: var(--color-primary);
+    color: #ffffff;
+    font-family: var(--font-sans);
+    font-weight: 600;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+  }
+
+  .btn-cta:hover {
+    background-color: var(--color-primary-hover);
+  }
+
+  .btn-secondary {
+    background-color: transparent;
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-weight: 500;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+    border: 1px solid var(--surface-border);
+  }
+
+  .btn-secondary:hover {
+    color: #ffffff;
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+
+  /* Layout spacing: use for section wrappers and containers */
+  .section-spacing {
+    padding-top: var(--space-section-sm);
+    padding-bottom: var(--space-section-sm);
+  }
+
+  @media (min-width: 768px) {
+    .section-spacing {
+      padding-top: var(--space-section);
+      padding-bottom: var(--space-section);
+    }
+  }
+
+  .container-padding {
+    padding-left: var(--space-container);
+    padding-right: var(--space-container);
+  }
+
+  @media (min-width: 1024px) {
+    .container-padding {
+      padding-left: var(--space-container-lg);
+      padding-right: var(--space-container-lg);
+    }
+  }
+
+  /* Product detail: main image + thumbnails layout */
+  .product-detail-image-block {
+    min-height: 0;
+  }
+
+  .product-detail-main {
+    aspect-ratio: 3 / 4;
+    max-height: min(80vh, 640px);
+  }
+
+  .product-detail-main img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .product-detail-thumbs {
+    min-height: 0;
+  }
+
+  @media (min-width: 768px) {
+    .product-detail-thumbs {
+      max-height: min(70vh, 520px);
+      min-height: 0;
+    }
+
+    .product-detail-thumb {
+      aspect-ratio: 3 / 4;
+    }
+  }
+
+  /* On mobile, show roughly three thumbnails per view */
+  .product-detail-thumb {
+    min-width: 33.3333%;
+  }
+
+  @media (min-width: 768px) {
+    .product-detail-thumb {
+      min-width: auto;
+    }
+  }
+
+  /* Utility to hide scrollbars on specific elements like carousels but keep functionality */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+    /* Chrome, Safari and Opera */
+  }
+
+  /* Luxury Text Effects */
+  .text-outline-white {
+    -webkit-text-stroke: 1px white;
+    color: transparent;
+  }
+
+  .text-outline-dark {
+    -webkit-text-stroke: 1px var(--text-primary);
+    color: transparent;
+  }
+
+  .italic-outline {
+    font-style: italic;
+    font-weight: 300;
+  }
+
+  /* Enhanced Perspective */
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .perspective-2000 {
+    perspective: 2000px;
+  }
+
+  /* New Glass Style */
+  .glass-modern {
+    background: rgba(var(--bg-rgb, 0, 0, 0), 0.4);
+    backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+
+  .glass-panel-premium {
+    background: linear-gradient(135deg,
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(255, 255, 255, 0.01) 100%);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+  }
+
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+}
