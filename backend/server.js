@@ -101,22 +101,15 @@ app.get('/', (req, res) => {
 // Only start listening locally - Vercel handles this automatically in serverless
 if (process.env.VERCEL !== '1') {
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, async () => {
+    app.listen(PORT, () => {
         console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 
-        // Ensure MongoDB is connected BEFORE initializing WhatsApp (MongoStore requires active DB)
-        try {
-            await connectDB();
-            console.log("MongoDB gracefully connected for backend booting.");
-            
-            // Initialize the WhatsApp Web Client Bot whenever the server starts.
-            // Avoid double-initialization within the same Node process.
-            if (!globalThis.__WHATSAPP_BOT_INITIALIZED__) {
-                globalThis.__WHATSAPP_BOT_INITIALIZED__ = true;
-                initializeWhatsApp();
-            }
-        } catch (err) {
-            console.error('Failed to boot backend services:', err);
+        // Initialize the WhatsApp Web Client Bot whenever the server starts.
+        // We explicitly do NOT await connectDB() here because Baileys does not require MongoDB.
+        // Awaiting Mongo here causes a race condition with Render's immediate Health Check pings!
+        if (!globalThis.__WHATSAPP_BOT_INITIALIZED__) {
+            globalThis.__WHATSAPP_BOT_INITIALIZED__ = true;
+            initializeWhatsApp();
         }
     });
 }
