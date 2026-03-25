@@ -1,25 +1,11 @@
-import path from 'path';
 import pkg from 'whatsapp-web.js';
-const { Client, LocalAuth } = pkg;
+const { Client, RemoteAuth } = pkg;
+import { MongoStore } from 'wwebjs-mongo';
+import mongoose from 'mongoose';
 import qrcode from 'qrcode'; // Real image generator
-import { fileURLToPath } from 'url';
-import fs from 'fs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Keep WhatsApp session + caches in deterministic locations.
-// On platforms like Render, persisting these folders (via Persistent Disk) is important.
-const AUTH_DATA_PATH = path.resolve(__dirname, '../.wwebjs_auth');
-const WEB_CACHE_PATH = path.resolve(__dirname, '../.wwebjs_cache');
-
-// Ensure write locations exist (Render sometimes mounts empty filesystem dirs).
-try {
-    fs.mkdirSync(AUTH_DATA_PATH, { recursive: true });
-    fs.mkdirSync(WEB_CACHE_PATH, { recursive: true });
-} catch (err) {
-    console.error('Failed to create WhatsApp cache/auth directories:', err);
-}
+// No longer relying on ephemeral server disk space for local storage.
+// Sessions will now be saved securely into MongoDB!
 
 let whatsappClient;
 export let isReady = false;
@@ -42,18 +28,15 @@ export const initializeWhatsApp = () => {
         return;
     }
 
-    // LocalAuth saves the session so we don't need to scan the QR code on every server restart
+    // Mount MongoDB Store to save session states permanently over ephemeral reboots
+    const store = new MongoStore({ mongoose: mongoose });
+
     whatsappClient = new Client({
-        authStrategy: new LocalAuth({
-            dataPath: AUTH_DATA_PATH,
+        authStrategy: new RemoteAuth({
+            clientId: 'eyestyle-bot',
+            store: store,
+            backupSyncIntervalMs: 300000 // Backup session sync every 5 minutes
         }),
-        // Prevent Render crashes caused by remote web version caching configuration.
-        // whatsapp-web.js can throw: "webVersionCache.remotePath is required when using the remote cache"
-        // if it ends up using remote caching.
-        webVersionCache: {
-            type: 'local',
-            path: WEB_CACHE_PATH,
-        },
         puppeteer: {
             executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
             args: [
@@ -64,6 +47,10 @@ export const initializeWhatsApp = () => {
                 '--no-first-run'
             ]
         }
+    });
+
+    whatsappClient.on('remote_session_saved', () => {
+        console.log('✅ WhatsApp MongoDB Session securely saved/synced!');
     });
 
     whatsappClient.on('qr', async (qr) => {

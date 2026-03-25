@@ -101,19 +101,22 @@ app.get('/', (req, res) => {
 // Only start listening locally - Vercel handles this automatically in serverless
 if (process.env.VERCEL !== '1') {
     const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
+    app.listen(PORT, async () => {
         console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 
-        // Initialize the WhatsApp Web Client Bot whenever the server starts.
-        // Wrap in try/catch so a WhatsApp failure does not crash the entire API server.
-        // Avoid double-initialization within the same Node process.
-        if (!globalThis.__WHATSAPP_BOT_INITIALIZED__) {
-            globalThis.__WHATSAPP_BOT_INITIALIZED__ = true;
-            try {
+        // Ensure MongoDB is connected BEFORE initializing WhatsApp (MongoStore requires active DB)
+        try {
+            await connectDB();
+            console.log("MongoDB gracefully connected for backend booting.");
+            
+            // Initialize the WhatsApp Web Client Bot whenever the server starts.
+            // Avoid double-initialization within the same Node process.
+            if (!globalThis.__WHATSAPP_BOT_INITIALIZED__) {
+                globalThis.__WHATSAPP_BOT_INITIALIZED__ = true;
                 initializeWhatsApp();
-            } catch (err) {
-                console.error('Failed to initialize WhatsApp client:', err);
             }
+        } catch (err) {
+            console.error('Failed to boot backend services:', err);
         }
     });
 }
