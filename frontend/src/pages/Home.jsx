@@ -60,12 +60,77 @@ const Home = () => {
 
     const [direction, setDirection] = useState(1); // 1 for right, -1 for left
 
+    const categoryScrollRef = useRef(null);
+    const isCategoryInteracting = useRef(false);
+
+    const handleInteractStart = () => { isCategoryInteracting.current = true; };
+    const handleInteractEnd = () => { isCategoryInteracting.current = false; };
+
     useEffect(() => {
-        const timer = setInterval(() => {
-            setDirection(1);
-            setCurrentSlide((prev) => (prev === heroSlides.length - 1 ? 0 : prev + 1));
-        }, 6000); // Slightly longer for luxurious pace
-        return () => clearInterval(timer);
+        const carousel = categoryScrollRef.current;
+        if (!carousel) return;
+
+        let intervalId;
+        
+        const autoAdvance = () => {
+             // Only pause if actively dragging/touching, not just casually hovering
+            if (isCategoryInteracting.current) return;
+            
+            const firstChild = carousel.firstElementChild;
+            const cardWidth = firstChild ? firstChild.offsetWidth : 300;
+            
+            const maxScroll = carousel.scrollWidth - carousel.clientWidth;
+            
+            // Disables if we can't even scroll one full card (prevents wiggles on laptops where elements technically overflow by a few pixels)
+            if (maxScroll < cardWidth * 0.5) return; 
+            
+            // If at the end, smoothly rewind to the start
+            if (carousel.scrollLeft >= maxScroll - 20) {
+                gsap.to(carousel, { scrollLeft: 0, duration: 1.5, ease: 'power3.inOut' });
+            } else {
+                // getComputedStyle for gap might return empty in some environments, fallback to 16
+                const rawGap = window.getComputedStyle(carousel).gap;
+                const gap = rawGap ? parseInt(rawGap) || 16 : 16;
+                const fullCardWidth = cardWidth + gap;
+
+                // Snap to the exact next block to avoid scroll stutter/snap CSS conflicts
+                const currentIdx = Math.round(carousel.scrollLeft / fullCardWidth);
+                const nextPos = (currentIdx + 1) * fullCardWidth;
+                
+                gsap.to(carousel, { scrollLeft: nextPos, duration: 1.2, ease: 'power3.inOut' });
+            }
+        };
+
+        // Interval set to 3 seconds per user request
+        intervalId = setInterval(autoAdvance, 3000);
+
+        return () => clearInterval(intervalId);
+    }, [categories]);
+
+    useEffect(() => {
+        let timer;
+        const startTimer = () => {
+            timer = setInterval(() => {
+                setDirection(1);
+                setCurrentSlide((prev) => (prev === heroSlides.length - 1 ? 0 : prev + 1));
+            }, 6000); // Slightly longer for luxurious pace
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                clearInterval(timer);
+            } else {
+                startTimer();
+            }
+        };
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+        startTimer();
+
+        return () => {
+            clearInterval(timer);
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+        };
     }, []);
 
     useEffect(() => {
@@ -146,18 +211,6 @@ const Home = () => {
                 scrub: true
             }
         });
-
-        // Refresh ScrollTrigger after scroll ends so fast-scrolled content still appears
-        let scrollEndTicker;
-        const onScrollEnd = () => {
-            clearTimeout(scrollEndTicker);
-            scrollEndTicker = setTimeout(() => ScrollTrigger.refresh(), 150);
-        };
-        window.addEventListener('scroll', onScrollEnd, { passive: true });
-        return () => {
-            clearTimeout(scrollEndTicker);
-            window.removeEventListener('scroll', onScrollEnd);
-        };
     }, { scope: containerRef, dependencies: [] });
 
     const nextSlide = () => {
@@ -262,22 +315,33 @@ const Home = () => {
                 <section className="pt-24 md:pt-32 pb-12 md:pb-16 bg-transparent relative z-10">
                     <style>{`
                         .carousel-card {
-                            width: calc((100% - 0px) / 1); /* Mobile: 1 card */
+                            width: 85vw; /* Mobile: almost full width for emphasis */
+                            max-width: 400px;
                         }
                         @media (min-width: 768px) {
                             .carousel-card {
-                                width: calc((100% - clamp(16px, 3vw, 32px)) / 2); /* Tablet: 2 cards */
+                                width: 45vw; /* Tablet: ~2 cards */
                             }
                         }
                         @media (min-width: 1024px) {
                             .carousel-card {
-                                width: calc((100% - (2 * clamp(16px, 3vw, 32px))) / 3); /* Laptop: 3 cards */
+                                width: 30vw; /* Laptop: ~3 cards */
                             }
                         }
                         @media (min-width: 1440px) {
                             .carousel-card {
-                                width: calc((100% - (3 * clamp(16px, 3vw, 32px))) / 4); /* Desktop: 4 cards */
+                                width: 22vw; /* Desktop: ~4 cards */
                             }
+                        }
+                        @keyframes marquee {
+                            0% { transform: translateX(0); }
+                            100% { transform: translateX(calc(-50% - (clamp(16px, 3vw, 32px) / 2))); }
+                        }
+                        .animate-marquee {
+                            animation: marquee 80s linear infinite;
+                        }
+                        .animate-marquee:hover {
+                            animation-play-state: paused;
                         }
                     `}</style>
                     <div className="max-w-[1600px] mx-auto px-4 md:px-10 mb-20 text-center">
@@ -285,16 +349,24 @@ const Home = () => {
                         <h3 className="text-5xl md:text-6xl font-serif font-black text-[var(--text-primary)] uppercase tracking-tighter">OUR REFINED<br /><span className="italic font-light">SELECTIONS</span></h3>
                     </div>
 
-                    <div className="max-w-[1600px] mx-auto overflow-hidden pb-10 px-4 md:px-10">
-                        <div
-                            className="flex w-full overflow-x-auto snap-x snap-mandatory scrollbar-hide"
-                            style={{ gap: 'clamp(16px, 3vw, 32px)' }}
+                    <div className="w-full pb-10">
+                        {/* Premium Snap Carousel Wrapper */}
+                        <div 
+                            ref={categoryScrollRef}
+                            className="flex w-full overflow-x-auto scrollbar-hide [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] cursor-grab active:cursor-grabbing px-4 md:px-10"
+                            style={{ scrollBehavior: 'auto', WebkitOverflowScrolling: 'touch', gap: 'clamp(16px, 3vw, 32px)' }}
+                            onTouchStart={handleInteractStart}
+                            onTouchEnd={handleInteractEnd}
+                            onTouchCancel={handleInteractEnd}
+                            onMouseDown={handleInteractStart}
+                            onMouseUp={handleInteractEnd}
+                            onMouseLeave={handleInteractEnd}
                         >
                             {categories.map((cat, idx) => (
                                 <Link
                                     key={cat._id}
                                     to={`/collections/${cat.slug}`}
-                                    className="relative shrink-0 snap-start group overflow-hidden block aspect-[3/4] max-w-full carousel-card"
+                                    className="relative shrink-0 group overflow-hidden block aspect-[3/4] carousel-card"
                                 >
                                     <img
                                         src={resolveImageUrl(cat.image)}
