@@ -1,6 +1,25 @@
+import path from 'path';
 import pkg from 'whatsapp-web.js';
 const { Client, LocalAuth } = pkg;
 import qrcode from 'qrcode'; // Real image generator
+import { fileURLToPath } from 'url';
+import fs from 'fs';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Keep WhatsApp session + caches in deterministic locations.
+// On platforms like Render, persisting these folders (via Persistent Disk) is important.
+const AUTH_DATA_PATH = path.resolve(__dirname, '../.wwebjs_auth');
+const WEB_CACHE_PATH = path.resolve(__dirname, '../.wwebjs_cache');
+
+// Ensure write locations exist (Render sometimes mounts empty filesystem dirs).
+try {
+    fs.mkdirSync(AUTH_DATA_PATH, { recursive: true });
+    fs.mkdirSync(WEB_CACHE_PATH, { recursive: true });
+} catch (err) {
+    console.error('Failed to create WhatsApp cache/auth directories:', err);
+}
 
 let whatsappClient;
 export let isReady = false;
@@ -25,7 +44,16 @@ export const initializeWhatsApp = () => {
 
     // LocalAuth saves the session so we don't need to scan the QR code on every server restart
     whatsappClient = new Client({
-        authStrategy: new LocalAuth(),
+        authStrategy: new LocalAuth({
+            dataPath: AUTH_DATA_PATH,
+        }),
+        // Prevent Render crashes caused by remote web version caching configuration.
+        // whatsapp-web.js can throw: "webVersionCache.remotePath is required when using the remote cache"
+        // if it ends up using remote caching.
+        webVersionCache: {
+            type: 'local',
+            path: WEB_CACHE_PATH,
+        },
         puppeteer: {
             executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
             args: [
@@ -43,7 +71,13 @@ export const initializeWhatsApp = () => {
             // Generate a real Base64 image
             latestQRData = await qrcode.toDataURL(qr);
             console.log('\n--- SCAN THIS QR CODE IN WHATSAPP TO LINK BOT ---');
-            console.log('📌 PLEASE GO TO: http://localhost:5000/api/whatsapp/qr');
+            // Render/Render-like platforms expose a public URL; fallback to localhost for local dev.
+            const renderExternalUrl = process.env.RENDER_EXTERNAL_URL || process.env.SERVICE_URL || '';
+            const port = process.env.PORT || 5000;
+            const qrUrl = renderExternalUrl
+                ? `${renderExternalUrl.replace(/\/$/, '')}/api/whatsapp/qr`
+                : `http://localhost:${port}/api/whatsapp/qr`;
+            console.log(`📌 PLEASE GO TO: ${qrUrl}`);
             console.log('--------------------------------------------------\n');
         } catch (err) {
             console.error('Failed to generate QR image', err);
@@ -67,7 +101,10 @@ export const initializeWhatsApp = () => {
         // Optionally, try to reinitialize here
     });
 
-    whatsappClient.initialize();
+    whatsappClient.initialize().catch((err) => {
+        console.error('WhatsApp initialization failed:', err);
+        isReady = false;
+    });
 };
 
 /**

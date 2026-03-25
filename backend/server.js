@@ -106,10 +106,14 @@ if (process.env.VERCEL !== '1') {
 
         // Initialize the WhatsApp Web Client Bot whenever the server starts.
         // Wrap in try/catch so a WhatsApp failure does not crash the entire API server.
-        try {
-            initializeWhatsApp();
-        } catch (err) {
-            console.error('Failed to initialize WhatsApp client:', err);
+        // Avoid double-initialization within the same Node process.
+        if (!globalThis.__WHATSAPP_BOT_INITIALIZED__) {
+            globalThis.__WHATSAPP_BOT_INITIALIZED__ = true;
+            try {
+                initializeWhatsApp();
+            } catch (err) {
+                console.error('Failed to initialize WhatsApp client:', err);
+            }
         }
     });
 }
