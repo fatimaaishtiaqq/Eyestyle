@@ -130,7 +130,13 @@ export const sendWhatsAppMessage = async (phone, message) => {
     try {
         // Format the phone number (whatsapp-web.js expects <number>@c.us)
         // Ensure no '+' sign or spaces
-        const formattedPhone = phone.replace(/\D/g, '');
+        let formattedPhone = phone.replace(/\D/g, '');
+        
+        // Auto-fix Pakistani local numbers (e.g., 03196200962 -> 923196200962)
+        // This ensures local clients don't accidentally fail to receive messages!
+        if (formattedPhone.startsWith('03') && formattedPhone.length === 11) {
+            formattedPhone = '92' + formattedPhone.substring(1);
+        }
         if (!formattedPhone) {
             console.error('Cannot send message: phone number is empty after formatting.');
             return false;
