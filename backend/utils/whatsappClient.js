@@ -35,12 +35,6 @@ export const initializeWhatsApp = () => {
                 '--disable-gpu',
                 '--no-first-run'
             ]
-        },
-        // Forces whatsapp-web.js to use the latest live WhatsApp Web version. 
-        // This is the #1 fix for "scans QR but instantly fails or logs out"
-        webVersionCache: {
-            type: 'remote',
-            strict: true
         }
     });
 
