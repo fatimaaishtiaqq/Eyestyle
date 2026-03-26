@@ -49,6 +49,10 @@ const Checkout = () => {
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    const [guestEmail, setGuestEmail] = useState(() => {
+        return localStorage.getItem('checkout_guest_email') || '';
+    });
+
     const [shippingDetails, setShippingDetails] = useState(() => {
         const saved = localStorage.getItem('checkout_shipping_details');
         return saved ? JSON.parse(saved) : {
@@ -73,6 +77,10 @@ const Checkout = () => {
     useEffect(() => {
         localStorage.setItem('checkout_billing_details', JSON.stringify(billingDetails));
     }, [billingDetails]);
+
+    useEffect(() => {
+        localStorage.setItem('checkout_guest_email', guestEmail);
+    }, [guestEmail]);
 
 
     // Pricing logic
@@ -163,6 +171,7 @@ const Checkout = () => {
                 clearCart();
                 localStorage.removeItem('checkout_shipping_details');
                 localStorage.removeItem('checkout_billing_details');
+                localStorage.removeItem('checkout_guest_email');
                 showToast('Order placed successfully!', 'success');
                 navigate('/orders');
             } else {
@@ -256,6 +265,7 @@ const Checkout = () => {
                 clearCart();
                 localStorage.removeItem('checkout_shipping_details');
                 localStorage.removeItem('checkout_billing_details');
+                localStorage.removeItem('checkout_guest_email');
                 // We'll let the whatsapp opening happen below, then redirect to orders
             } else {
                 const data = await res.json();
@@ -292,7 +302,7 @@ const Checkout = () => {
             message += `*${index + 1}. ${item.name}*\n`;
             message += `▸ Qty: ${item.quantity}  |  Price: Rs. ${itemPrice}\n`;
             if (item.variations && Object.keys(item.variations).length > 0) {
-                message += `▸ Specs: ${Object.entries(item.variations).map(([k, v]) => `${k}: Rs. {v}`).join(', ')}\n`;
+                message += `▸ Specs: ${Object.entries(item.variations).map(([k, v]) => `${k}: ${v}`).join(', ')}\n`;
             }
             message += `\n`;
         });
@@ -300,7 +310,7 @@ const Checkout = () => {
         message += `───────────────────────\n\n`;
         message += `💰 *ＯＲＤＥＲ ＳＵＭＭＡＲＹ*\n`;
         message += `▸ Subtotal: Rs. ${cartTotal.toFixed(2)}\n`;
-        message += `▸ Shipping: ${shipping === 0 && cartTotal > 0 ? 'Free' : `Rs. Rs. {shipping.toFixed(2)}`}\n`;
+        message += `▸ Shipping: ${shipping === 0 && cartTotal > 0 ? 'Free' : `Rs. ${shipping.toFixed(2)}`}\n`;
         message += `▸ Taxes: Rs. ${taxes.toFixed(2)}\n`;
         message += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
         message += `🏆 *TOTAL DUE: Rs. ${grandTotal.toFixed(2)}*\n`;
@@ -411,15 +421,17 @@ const Checkout = () => {
                                     </div>
                                 ) : (
                                     <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                                        <Field
-                                            label="Email address"
-                                            name="email"
-                                            type="email"
-                                            value=""
-                                            onChange={() => { }}
-                                            placeholder="your@email.com"
-                                        />
-                                        <div className="shrink-0 text-[12px] text-[var(--text-secondary)] whitespace-nowrap">
+                                        <div className="flex-1">
+                                            <Field
+                                                label="Email address"
+                                                name="email"
+                                                type="email"
+                                                value={guestEmail}
+                                                onChange={(e) => setGuestEmail(e.target.value)}
+                                                placeholder="your@email.com"
+                                            />
+                                        </div>
+                                        <div className="shrink-0 text-[12px] text-[var(--text-secondary)] whitespace-nowrap pt-5">
                                             Already have an account?{' '}
                                             <Link
                                                 to="/account"
