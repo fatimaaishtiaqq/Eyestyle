@@ -7,7 +7,7 @@ import { useGSAP } from '@gsap/react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useTheme } from '../context/ThemeContext';
-import { API_BASE_URL, getWithCache } from '../utils/apiClient';
+import { getWithCache } from '../utils/apiClient';
 
 const Navbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -42,12 +42,21 @@ const Navbar = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // Robust Mobile Navigation: Close menu and scroll UP on any URL change
+    // Pro Solution: Auto-close on any URL change and reset scroll position
     useEffect(() => {
         setMobileMenuOpen(false);
         setIsSearchOpen(false);
         window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, [location.pathname, location.search]);
+    }, [location]);
+
+    // Body Scroll Lock: Prevent background scrolling when menu is open
+    useEffect(() => {
+        if (mobileMenuOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'auto';
+        }
+    }, [mobileMenuOpen]);
 
     useEffect(() => {
         const fetchCategories = async () => {
@@ -58,7 +67,7 @@ const Navbar = () => {
                     name: p.name,
                     slug: p.slug,
                     path: `/collections/${p.slug}`,
-                    image: p.image || `https://source.unsplash.com/random/400x600?${p.slug},luxury`, // Fallback for visually rich menus
+                    image: p.image || `https://source.unsplash.com/random/400x600?${p.slug},luxury`, 
                     subcategories: data
                         .filter(c => c.parent?._id === p._id || c.parent?.slug === p.slug)
                         .map(sub => ({
@@ -129,14 +138,12 @@ const Navbar = () => {
 
                     {/* Logo & Desktop Categories */}
                     <div className="flex items-center justify-start gap-12 z-10 flex-shrink min-w-0">
-                        {/* Logo */}
                         <div className="flex-shrink min-w-0 text-left">
                             <Link to="/" onClick={() => setMobileMenuOpen(false)} className="inline-flex items-center group px-1 max-w-full">
                                 <span className="text-base xs:text-lg sm:text-2xl font-serif font-bold tracking-[0.1em] xs:tracking-widest sm:tracking-[0.2em] text-[var(--text-primary)] transition-all duration-500 group-hover:tracking-[0.2em] sm:group-hover:tracking-[0.3em] uppercase truncate w-full">EYESTYLE</span>
                             </Link>
                         </div>
 
-                        {/* Categories (Next to Logo) */}
                         <nav className="hidden lg:flex gap-10 items-center">
                             {categories.map((link) => (
                                 <div key={link.name} className="relative group h-full flex items-center">
@@ -148,11 +155,9 @@ const Navbar = () => {
                                         {link.subcategories && link.subcategories.length > 0 && <ChevronDown size={12} className="group-hover:-rotate-180 transition-transform duration-300" />}
                                     </Link>
 
-                                    {/* MEGA MENU style subcategory dropdown */}
                                     {link.subcategories && link.subcategories.length > 0 && (
                                         <div className="absolute top-12 left-0 pt-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-500 transform origin-top -translate-y-4 group-hover:translate-y-0 z-[100]">
                                             <div className="bg-[var(--bg-color)] shadow-2xl p-0 min-w-[500px] flex border border-[var(--surface-border)] rounded-sm overflow-hidden">
-                                                {/* Left: Content */}
                                                 <div className="flex-1 p-8 flex flex-col">
                                                     <p className="text-[10px] tracking-widest text-[var(--text-muted)] uppercase mb-6 font-bold border-b border-[var(--surface-border)] pb-2">Categories</p>
                                                     <div className="grid grid-cols-2 gap-x-8 gap-y-4">
@@ -168,7 +173,6 @@ const Navbar = () => {
                                                         ))}
                                                     </div>
                                                 </div>
-                                                {/* Right: Featured Category Image */}
                                                 <div className="w-[200px] relative overflow-hidden group/img">
                                                     <img
                                                         src={link.image}
@@ -239,46 +243,48 @@ const Navbar = () => {
                     </div>
                 </div>
             </div>
-            {/* Mobile Menu - Always in DOM but controlled via state to prevent AnimatePresence ghosting */}
-            <motion.div
-                initial={false}
-                animate={{
-                    height: mobileMenuOpen ? 'auto' : 0,
-                    opacity: mobileMenuOpen ? 1 : 0,
-                    pointerEvents: mobileMenuOpen ? 'auto' : 'none',
-                    visibility: mobileMenuOpen ? 'visible' : 'hidden'
-                }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                className="lg:hidden bg-[var(--bg-color)] border-t border-[var(--surface-border)] absolute w-full shadow-2xl overflow-hidden z-[40]"
-            >
-                <div className="px-6 py-10 space-y-8 flex flex-col">
-                    {categories.map((link) => (
-                        <div key={link.name} className="flex flex-col space-y-4">
-                            <Link
-                                to={link.path}
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="text-lg font-serif font-bold text-[var(--text-primary)] tracking-widest uppercase"
-                            >
-                                {link.name}
-                            </Link>
-                            {link.subcategories && (
-                                <div className="flex flex-col pl-6 space-y-3 border-l-2 border-[var(--surface-border)]">
-                                    {link.subcategories.map(sub => (
-                                        <Link
-                                            key={sub.name}
-                                            to={sub.path}
-                                            onClick={() => setMobileMenuOpen(false)}
-                                            className="text-sm font-sans text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors tracking-wide"
-                                        >
-                                            {sub.name}
-                                        </Link>
-                                    ))}
+
+            {/* Pro Fix: Conditional Rendering ensures component UNMOUNTS on close */}
+            <AnimatePresence>
+                {mobileMenuOpen && (
+                    <motion.div
+                        key="pro-mobile-menu"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                        className="lg:hidden bg-[var(--bg-color)] border-t border-[var(--surface-border)] absolute w-full shadow-2xl overflow-hidden z-[40]"
+                    >
+                        <div className="px-6 py-10 space-y-8 flex flex-col">
+                            {categories.map((link) => (
+                                <div key={link.name} className="flex flex-col space-y-4">
+                                    <Link
+                                        to={link.path}
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="text-lg font-serif font-bold text-[var(--text-primary)] tracking-widest uppercase"
+                                    >
+                                        {link.name}
+                                    </Link>
+                                    {link.subcategories && (
+                                        <div className="flex flex-col pl-6 space-y-3 border-l-2 border-[var(--surface-border)]">
+                                            {link.subcategories.map(sub => (
+                                                <Link
+                                                    key={sub.name}
+                                                    to={sub.path}
+                                                    onClick={() => setMobileMenuOpen(false)}
+                                                    className="text-sm font-sans text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors tracking-wide"
+                                                >
+                                                    {sub.name}
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
-                            )}
+                            ))}
                         </div>
-                    ))}
-                </div>
-            </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </header>
     );
 };
