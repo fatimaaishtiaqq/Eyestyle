@@ -42,7 +42,7 @@ const Checkout = () => {
     const [summaryOpen, setSummaryOpen] = useState(false);
 
     // Selected payment method
-    const [paymentMethod, setPaymentMethod] = useState('Credit Card');
+    const [paymentMethod, setPaymentMethod] = useState('Cash on Delivery');
 
     // Billing address toggle
     const [sameAsShipping, setSameAsShipping] = useState(true);
@@ -436,56 +436,11 @@ const Checkout = () => {
                                     <h2 className="text-[11px] font-black tracking-[0.4em] uppercase text-[var(--text-primary)]">Payment Method</h2>
                                 </div>
 
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    {['Credit Card', 'PayPal', 'Cash on Delivery'].map((method) => (
-                                        <button
-                                            key={method}
-                                            type="button"
-                                            onClick={() => setPaymentMethod(method)}
-                                            className={`h-14 flex items-center justify-center border text-[11px] font-bold tracking-wider uppercase transition-all ${paymentMethod === method
-                                                ? 'border-accent bg-accent/10 text-[var(--text-primary)]'
-                                                : 'border-[var(--surface-border)] bg-[var(--surface-color)] text-[var(--text-secondary)] hover:border-[var(--text-primary)]'
-                                                }`}
-                                        >
-                                            {method}
-                                        </button>
-                                    ))}
+                                <div className="h-14 flex items-center justify-center border border-accent bg-accent/10 text-[11px] font-bold tracking-wider uppercase text-[var(--text-primary)]">
+                                    Cash on Delivery
                                 </div>
                             </div>
 
-                            {/* ─ 4. BILLING ADDRESS ──────────────────────── */}
-                            <div className="border border-[var(--surface-border)] bg-[var(--card-bg)] p-5 sm:p-6">
-                                <div className="flex items-center gap-3 mb-4 pb-3 border-b border-[var(--surface-border)]">
-                                    <span className="w-6 h-6 rounded-full bg-[var(--text-primary)] text-[var(--bg-color)] flex items-center justify-center text-[10px] font-black shrink-0">4</span>
-                                    <h2 className="text-[11px] font-black tracking-[0.4em] uppercase text-[var(--text-primary)]">Billing Address</h2>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                        <input type="radio" checked={sameAsShipping} onChange={() => setSameAsShipping(true)} className="w-4 h-4 accent-accent" />
-                                        <span className="text-sm text-[var(--text-primary)]">Same as shipping address</span>
-                                    </label>
-                                    <label className="flex items-center gap-3 cursor-pointer">
-                                        <input type="radio" checked={!sameAsShipping} onChange={() => setSameAsShipping(false)} className="w-4 h-4 accent-accent" />
-                                        <span className="text-sm text-[var(--text-primary)]">Use a different billing address</span>
-                                    </label>
-                                </div>
-
-                                {!sameAsShipping && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                                        <Field label="First Name" name="firstName" value={billingDetails.firstName} onChange={handleBillingChange} required />
-                                        <Field label="Last Name" name="lastName" value={billingDetails.lastName} onChange={handleBillingChange} required />
-                                        <div className="md:col-span-2">
-                                            <Field label="Address" name="address" value={billingDetails.address} onChange={handleBillingChange} required />
-                                        </div>
-                                        <Field label="City" name="city" value={billingDetails.city} onChange={handleBillingChange} required />
-                                        <Field label="Postal Code" name="postalCode" value={billingDetails.postalCode} onChange={handleBillingChange} required />
-                                        <div className="md:col-span-2">
-                                            <Field label="Country" name="country" value={billingDetails.country} onChange={handleBillingChange} required />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
 
                             {/* ─ Mobile Place Order Button ────────────────── */}
                             <div className="lg:hidden">
