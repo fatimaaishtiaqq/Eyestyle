@@ -1,18 +1,93 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Primary Pages -->
   <url>
     <loc>https://eyestylepk.com/</loc>
     <lastmod>2026-03-26</lastmod>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>https://eyestylepk.com/shop</loc>
+    <loc>https://eyestylepk.com/about</loc>
     <lastmod>2026-03-26</lastmod>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://eyestylepk.com/cart</loc>
+    <loc>https://eyestylepk.com/contact</loc>
+    <lastmod>2026-03-26</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://eyestylepk.com/faq</loc>
+    <lastmod>2026-03-26</lastmod>
+    <priority>0.7</priority>
+  </url>
+
+  <!-- Collection / Category Pages -->
+  <url>
+    <loc>https://eyestylepk.com/collections/all</loc>
+    <lastmod>2026-03-26</lastmod>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://eyestylepk.com/collections/sunglasses</loc>
+    <lastmod>2026-03-26</lastmod>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://eyestylepk.com/collections/eyeglasses</loc>
+    <lastmod>2026-03-26</lastmod>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://eyestylepk.com/collections/computer-glasses</loc>
+    <lastmod>2026-03-26</lastmod>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://eyestylepk.com/collections/accessories</loc>
+    <lastmod>2026-03-26</lastmod>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://eyestylepk.com/collections/men</loc>
+    <lastmod>2026-03-26</lastmod>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://eyestylepk.com/collections/women</loc>
+    <lastmod>2026-03-26</lastmod>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://eyestylepk.com/collections/unisex</loc>
+    <lastmod>2026-03-26</lastmod>
+    <priority>0.9</priority>
+  </url>
+
+  <!-- Informational Pages -->
+  <url>
+    <loc>https://eyestylepk.com/shipping</loc>
     <lastmod>2026-03-26</lastmod>
     <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://eyestylepk.com/careers</loc>
+    <lastmod>2026-03-26</lastmod>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://eyestylepk.com/sustainability</loc>
+    <lastmod>2026-03-26</lastmod>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://eyestylepk.com/privacy</loc>
+    <lastmod>2026-03-26</lastmod>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://eyestylepk.com/terms</loc>
+    <lastmod>2026-03-26</lastmod>
+    <priority>0.3</priority>
   </url>
 </urlset>
