@@ -49,15 +49,31 @@ const Checkout = () => {
 
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const [shippingDetails, setShippingDetails] = useState({
-        firstName: '', lastName: '', address: '', city: '',
-        postalCode: '', country: '', phone: ''
+    const [shippingDetails, setShippingDetails] = useState(() => {
+        const saved = localStorage.getItem('checkout_shipping_details');
+        return saved ? JSON.parse(saved) : {
+            firstName: '', lastName: '', address: '', city: '',
+            postalCode: '', country: '', phone: ''
+        };
     });
 
-    const [billingDetails, setBillingDetails] = useState({
-        firstName: '', lastName: '', address: '', city: '',
-        postalCode: '', country: ''
+    const [billingDetails, setBillingDetails] = useState(() => {
+        const saved = localStorage.getItem('checkout_billing_details');
+        return saved ? JSON.parse(saved) : {
+            firstName: '', lastName: '', address: '', city: '',
+            postalCode: '', country: ''
+        };
     });
+
+    // Persist form data to localStorage
+    useEffect(() => {
+        localStorage.setItem('checkout_shipping_details', JSON.stringify(shippingDetails));
+    }, [shippingDetails]);
+
+    useEffect(() => {
+        localStorage.setItem('checkout_billing_details', JSON.stringify(billingDetails));
+    }, [billingDetails]);
+
 
     // Pricing logic
     const threshold = settings?.freeShippingThreshold ?? 200;
@@ -145,6 +161,8 @@ const Checkout = () => {
 
             if (res.ok) {
                 clearCart();
+                localStorage.removeItem('checkout_shipping_details');
+                localStorage.removeItem('checkout_billing_details');
                 showToast('Order placed successfully!', 'success');
                 navigate('/orders');
             } else {
@@ -236,6 +254,8 @@ const Checkout = () => {
                 const data = await res.json();
                 orderId = data.orderId;
                 clearCart();
+                localStorage.removeItem('checkout_shipping_details');
+                localStorage.removeItem('checkout_billing_details');
                 // We'll let the whatsapp opening happen below, then redirect to orders
             } else {
                 const data = await res.json();

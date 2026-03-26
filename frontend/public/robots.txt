@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://eyestylepk.com/sitemap.xml

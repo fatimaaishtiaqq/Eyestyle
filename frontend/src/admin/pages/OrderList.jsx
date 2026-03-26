@@ -20,11 +20,27 @@ const OrderList = () => {
     const location = useLocation();
 
     // Tabs for Active vs Completed
-    const [activeTab, setActiveTab] = useState('all'); // default to all if searching from topbar
+    const [activeTab, setActiveTab] = useState(() => {
+        const navEntries = performance.getEntriesByType('navigation');
+        const isReload = navEntries.length > 0 && navEntries[ navEntries.length - 1 ].type === 'reload';
+        const saved = localStorage.getItem('admin_orders_active_tab');
+        
+        if (isReload && saved) {
+            return saved;
+        }
+        return 'active'; // Default to active on new navigation
+    });
+
     const [searchTerm, setSearchTerm] = useState(() => {
         const params = new URLSearchParams(location.search);
         return params.get('search') || '';
     });
+
+    // Save active tab to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('admin_orders_active_tab', activeTab);
+    }, [activeTab]);
+
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);
