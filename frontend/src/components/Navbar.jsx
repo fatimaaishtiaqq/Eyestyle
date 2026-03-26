@@ -239,63 +239,46 @@ const Navbar = () => {
                     </div>
                 </div>
             </div>
-
-            <AnimatePresence mode="wait">
-                {mobileMenuOpen && (
-                    <motion.div
-                        key="mobile-menu-overlay"
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0, transition: { duration: 0.2 } }}
-                        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                        className="lg:hidden bg-[var(--bg-color)] border-t border-[var(--surface-border)] absolute w-full shadow-2xl overflow-hidden z-[40]"
-                    >
-                        <div className="px-6 py-10 space-y-8 flex flex-col">
-                            {categories.map((link) => (
-                                <div key={link.name} className="flex flex-col space-y-4">
-                                    <Link
-                                        to={link.path}
-                                        onClick={() => setMobileMenuOpen(false)}
-                                        className="text-lg font-serif font-bold text-[var(--text-primary)] tracking-widest uppercase"
-                                    >
-                                        {link.name}
-                                    </Link>
-                                    {link.subcategories && (
-                                        <div className="flex flex-col pl-6 space-y-3 border-l-2 border-[var(--surface-border)]">
-                                            {link.subcategories.map(sub => (
-                                                <Link
-                                                    key={sub.name}
-                                                    to={sub.path}
-                                                    onClick={() => setMobileMenuOpen(false)}
-                                                    className="text-sm font-sans text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors tracking-wide"
-                                                >
-                                                    {sub.name}
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    )}
+            {/* Mobile Menu - Always in DOM but controlled via state to prevent AnimatePresence ghosting */}
+            <motion.div
+                initial={false}
+                animate={{
+                    height: mobileMenuOpen ? 'auto' : 0,
+                    opacity: mobileMenuOpen ? 1 : 0,
+                    pointerEvents: mobileMenuOpen ? 'auto' : 'none',
+                    visibility: mobileMenuOpen ? 'visible' : 'hidden'
+                }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                className="lg:hidden bg-[var(--bg-color)] border-t border-[var(--surface-border)] absolute w-full shadow-2xl overflow-hidden z-[40]"
+            >
+                <div className="px-6 py-10 space-y-8 flex flex-col">
+                    {categories.map((link) => (
+                        <div key={link.name} className="flex flex-col space-y-4">
+                            <Link
+                                to={link.path}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="text-lg font-serif font-bold text-[var(--text-primary)] tracking-widest uppercase"
+                            >
+                                {link.name}
+                            </Link>
+                            {link.subcategories && (
+                                <div className="flex flex-col pl-6 space-y-3 border-l-2 border-[var(--surface-border)]">
+                                    {link.subcategories.map(sub => (
+                                        <Link
+                                            key={sub.name}
+                                            to={sub.path}
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className="text-sm font-sans text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors tracking-wide"
+                                        >
+                                            {sub.name}
+                                        </Link>
+                                    ))}
                                 </div>
-                            ))}
-                            <div className="flex items-center justify-between pt-6 border-t border-[var(--surface-border)]">
-                                <span className="text-[10px] tracking-widest uppercase font-bold text-[var(--text-muted)]">Theme Appearance</span>
-                                <button onClick={toggleTheme} className="text-[var(--text-primary)] p-2 rounded-full bg-[var(--surface-color)] border border-[var(--surface-border)]" aria-label="Toggle Theme">
-                                    {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
-                                </button>
-                            </div>
-                            <form onSubmit={handleSearchSubmit} className="flex items-center bg-[var(--surface-color)] rounded-sm px-4 py-3 border border-[var(--surface-border)]">
-                                <Search size={18} className="text-[var(--text-muted)] mr-3" />
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    placeholder="SEARCH PRODUCTS..."
-                                    className="w-full text-[10px] tracking-widest outline-none bg-transparent text-[var(--text-primary)] placeholder-[var(--text-muted)] font-sans uppercase"
-                                />
-                            </form>
+                            )}
                         </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    ))}
+                </div>
+            </motion.div>
         </header>
     );
 };
