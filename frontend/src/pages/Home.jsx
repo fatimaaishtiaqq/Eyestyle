@@ -203,14 +203,16 @@ const Home = () => {
         });
 
         // Parallax effect for section images
-        gsap.to('.parallax-img', {
-            yPercent: -20,
-            ease: 'none',
-            scrollTrigger: {
-                trigger: '.parallax-img',
-                scrub: true
-            }
-        });
+        if (document.querySelector('.parallax-img')) {
+            gsap.to('.parallax-img', {
+                yPercent: -20,
+                ease: 'none',
+                scrollTrigger: {
+                    trigger: '.parallax-img',
+                    scrub: true
+                }
+            });
+        }
     }, { scope: containerRef, dependencies: [] });
 
     const nextSlide = () => {
@@ -410,7 +412,7 @@ const Home = () => {
                     <img
                         src="/images/generated/collection_men_new_1772798073357.png"
                         alt="Men"
-                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-105 group-hover:scale-100"
+                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-105 group-hover:scale-100 parallax-img"
                     />
                     <div className="absolute inset-0 bg-black/40 group-hover:bg-black/10 transition-all"></div>
                     <div className="absolute inset-0 flex flex-col items-center justify-center group-hover:scale-110 transition-transform duration-700">
@@ -422,7 +424,7 @@ const Home = () => {
                     <img
                         src="/images/generated/collection_women_new_1772798088665.png"
                         alt="Women"
-                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-105 group-hover:scale-100"
+                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-105 group-hover:scale-100 parallax-img"
                     />
                     <div className="absolute inset-0 bg-black/40 group-hover:bg-black/10 transition-all"></div>
                     <div className="absolute inset-0 flex flex-col items-center justify-center group-hover:scale-110 transition-transform duration-700">

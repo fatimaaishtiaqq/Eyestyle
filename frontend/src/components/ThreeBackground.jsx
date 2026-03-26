@@ -152,11 +152,24 @@ const ThreeBackground = ({ variant = 'default' }) => {
         // Defer enabling the 3D background until after first paint.
         // Skip entirely on small screens and for users who prefer reduced motion.
         const isMobile = window.innerWidth < 768;
+        
+        // Bot detection — Googlebot and PageSpeed tools often stall on complex WebGL
+        const isBot = /bot|googlebot|crawler|spider|robot|crawling|lighthouse|chrome-lighthouse/i.test(navigator.userAgent);
+
         const prefersReduce =
             typeof window.matchMedia === 'function' &&
             window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-        if (isMobile || prefersReduce) {
+        if (isMobile || prefersReduce || isBot) {
+            return;
+        }
+
+        // Check for WebGL support
+        try {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            if (!gl) return;
+        } catch (e) {
             return;
         }
 
