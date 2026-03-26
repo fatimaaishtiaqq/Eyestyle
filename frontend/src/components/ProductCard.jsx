@@ -41,7 +41,7 @@ const ProductCard = ({ product }) => {
 
     return (
         <motion.div
-            className="group flex flex-col w-full card-premium overflow-hidden"
+            className="group flex flex-col w-full card-premium overflow-hidden rounded-[4px] sm:rounded-[14px]"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             initial={{ opacity: 0, y: 30 }}
@@ -80,34 +80,34 @@ const ProductCard = ({ product }) => {
             </div>
 
             {/* Product Details - Mockup matched styling */}
-            <div className="flex flex-col p-2.5 sm:p-5 bg-[var(--card-bg)] flex-grow">
+            <div className="flex flex-col p-2 sm:p-5 bg-[var(--card-bg)] flex-grow">
                 
                 {/* Product Meta */}
-                <div className="flex items-center gap-1.5 mb-1 sm:mb-3">
+                <div className="flex items-center gap-1 mb-0.5 sm:mb-3">
                     <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0 bg-[var(--surface-border)]">
                          <img src="/icons/glasses-icon.png" alt="icon" className="w-full h-full object-cover opacity-50" onError={(e) => { e.target.style.display = 'none'; }} />
                     </div>
                     <Link to={`/product/${product._id || product.id}`}>
-                        <h3 className="font-sans text-[14px] xs:text-[16px] font-bold text-[var(--text-primary)] transition-colors hover:text-[var(--color-primary)] line-clamp-2">
+                        <h3 className="font-sans text-[12px] sm:text-[16px] font-bold text-[var(--text-primary)] transition-colors hover:text-[var(--color-primary)] line-clamp-1 leading-tight">
                             {product.name}
                         </h3>
                     </Link>
                 </div>
                 
-                <p className="font-sans text-[11px] sm:text-[13px] text-[var(--text-secondary)] mb-1 truncate opacity-70">
+                <p className="font-sans text-[10px] sm:text-[13px] text-[var(--text-secondary)] mb-1 truncate opacity-70">
                     {product.description || "Minimal & stylish eyewear"}
                 </p>
                 
 
 
                 <div className="mt-auto pt-1">
-                    <p className="font-sans font-bold text-[var(--text-primary)] text-base sm:text-xl mb-3">
+                    <p className="font-sans font-bold text-[var(--text-primary)] text-[14px] sm:text-xl mb-2 sm:mb-3">
                         Rs. {product.price ? product.price.toFixed(2) : '0.00'}
                     </p>
                     
                     <button
                         onClick={handleAddToCart}
-                        className="w-full btn-primary py-3 text-sm"
+                        className="w-full btn-primary py-1.5 sm:py-3 text-[10px] sm:text-sm"
                     >
                         Buy Now
                     </button>
