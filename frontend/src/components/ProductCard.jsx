@@ -132,7 +132,7 @@ const ProductCard = ({ product }) => {
                 <div className="flex flex-col items-center gap-2">
                     <span className="w-8 h-[1px] bg-[var(--surface-border)]"></span>
                     <p className="font-sans font-black text-[var(--text-primary)] text-[14px] tracking-widest">
-                        ${product.price ? product.price.toFixed(2) : '0.00'}
+                        Rs. {product.price ? product.price.toFixed(2) : '0.00'}
                     </p>
                 </div>
             </div>

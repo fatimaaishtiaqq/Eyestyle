@@ -7,6 +7,7 @@ import { WishlistProvider } from './context/WishlistContext.jsx'
 import { ToastProvider } from './context/ToastContext.jsx'
 import { OrderProvider } from './context/OrderContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
+import { SettingsProvider } from './context/SettingsContext.jsx'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
@@ -15,7 +16,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                 <WishlistProvider>
                     <OrderProvider>
                         <ThemeProvider>
-                            <App />
+                            <SettingsProvider>
+                                <App />
+                            </SettingsProvider>
                         </ThemeProvider>
                     </OrderProvider>
                 </WishlistProvider>

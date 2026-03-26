@@ -97,7 +97,7 @@ const AdminDashboard = () => {
                     <div>
                         <p className="text-xs uppercase tracking-widest text-[var(--text-muted)] font-medium mb-1">Total Revenue</p>
                         <h3 className="text-3xl font-sans font-bold text-[var(--text-primary)]">
-                            ${loading ? '...' : metrics.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            Rs. {loading ? '...' : metrics.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </h3>
                     </div>
                 </div>
@@ -154,7 +154,7 @@ const AdminDashboard = () => {
                                     <td className="px-6 py-4 font-medium text-[var(--text-primary)] text-xs">{product._id.substring(18).toUpperCase()}</td>
                                     <td className="px-6 py-4 text-[var(--text-primary)] max-w-[200px] truncate" title={product.name}>{product.name}</td>
                                     <td className="px-6 py-4 text-[var(--text-primary)]">{product.countInStock} units</td>
-                                    <td className="px-6 py-4 text-[var(--text-primary)]">${product.price.toFixed(2)}</td>
+                                    <td className="px-6 py-4 text-[var(--text-primary)]">Rs. {product.price.toFixed(2)}</td>
                                     <td className="px-6 py-4">
                                         <span className={`px-2 py-1 text-[10px] rounded-sm uppercase font-bold tracking-wider ${product.isActive !== false ? 'bg-[var(--surface-border)] text-[var(--text-primary)]' :
                                             'bg-[var(--surface-color)] text-[var(--text-muted)]'

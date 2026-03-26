@@ -10,6 +10,7 @@ import categoryRoutes from './routes/categoryRoutes.js';
 import subCategoryRoutes from './routes/subCategoryRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
+import settingRoutes from './routes/settingRoutes.js';
 import { initializeWhatsApp, isReady, latestQRData } from './utils/whatsappClient.js';
 
 dotenv.config();
@@ -53,6 +54,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/subcategories', subCategoryRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/settings', settingRoutes);
 
 // Helper route to visually display the QR code for easier scanning
 app.get('/api/whatsapp/qr', (req, res) => {

@@ -28,8 +28,8 @@ const Shipping = () => {
                         </h2>
                         <div className="space-y-10">
                             {[
-                                { label: 'STANDARD TRANSIT', detail: 'Complimentary on acquisitions over $150. Delivery within 3-5 operational days.' },
-                                { label: 'EXPRESS EXPEDITION', detail: '$15 flat rate. Delivery within 1-2 operational days.' },
+                                { label: 'STANDARD TRANSIT', detail: 'Complimentary on acquisitions over Rs. 150. Delivery within 3-5 operational days.' },
+                                { label: 'EXPRESS EXPEDITION', detail: 'Rs. 15 flat rate. Delivery within 1-2 operational days.' },
                                 { label: 'GLOBAL REACH', detail: 'Calculated at checkout. Average transit of 7-14 operational days.' }
                             ].map((item, i) => (
                                 <div key={i} className="border-l-2 border-accent/30 pl-6 group">

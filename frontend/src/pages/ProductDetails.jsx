@@ -465,7 +465,7 @@ const ProductDetails = () => {
                                     </h1>
                                     <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-1">
                                         <p className="text-xl sm:text-2xl font-sans font-black tracking-tight">
-                                            ${product.price ? Number(product.price).toFixed(2) : '0.00'}
+                                            Rs. {product.price ? Number(product.price).toFixed(2) : '0.00'}
                                         </p>
                                         <span className="w-8 h-[1px] bg-black/10 hidden sm:block"></span>
                                         <span className="text-[9px] tracking-[0.4em] font-black uppercase opacity-20 hidden md:inline">ITEM No. {id.slice(-6).toUpperCase()}</span>

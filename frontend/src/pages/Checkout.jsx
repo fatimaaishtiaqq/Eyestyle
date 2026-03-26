@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
+import { useSettings } from '../context/SettingsContext';
 import { API_BASE_URL } from '../utils/apiClient';
 import ThreeBackground from '../components/ThreeBackground';
 import { ChevronDown, ChevronUp, Shield, Lock, Package } from 'lucide-react';
-
-const FREE_SHIPPING_THRESHOLD = 200;
 
 // Reusable field component for clean DRY forms
 const Field = ({ label, name, type = 'text', value, onChange, required, placeholder, colSpan }) => (
@@ -29,6 +28,7 @@ const Field = ({ label, name, type = 'text', value, onChange, required, placehol
 const Checkout = () => {
     const { cartItems, cartTotal, clearCart } = useCart();
     const { showToast } = useToast();
+    const { settings } = useSettings();
     const navigate = useNavigate();
 
     // Auth state
@@ -59,9 +59,13 @@ const Checkout = () => {
         postalCode: '', country: ''
     });
 
-    // Pricing
-    const shipping = cartTotal <= 0 ? 0 : cartTotal >= FREE_SHIPPING_THRESHOLD ? 0 : 15;
-    const taxes = +(cartTotal * 0.10).toFixed(2);
+    // Pricing logic
+    const threshold = settings?.freeShippingThreshold ?? 200;
+    const shippingFee = settings?.shippingFee ?? 15;
+    const taxRate = settings?.taxRate ?? 10;
+    
+    const shipping = cartTotal <= 0 ? 0 : cartTotal >= threshold ? 0 : shippingFee;
+    const taxes = +(cartTotal * (taxRate / 100)).toFixed(2);
     const grandTotal = +(cartTotal + shipping + taxes).toFixed(2);
 
     const handleShippingChange = (e) =>
@@ -266,20 +270,20 @@ const Checkout = () => {
             const itemPrice = ((item.price || 0) * item.quantity).toFixed(2);
 
             message += `*${index + 1}. ${item.name}*\n`;
-            message += `▸ Qty: ${item.quantity}  |  Price: $${itemPrice}\n`;
+            message += `▸ Qty: ${item.quantity}  |  Price: Rs. ${itemPrice}\n`;
             if (item.variations && Object.keys(item.variations).length > 0) {
-                message += `▸ Specs: ${Object.entries(item.variations).map(([k, v]) => `${k}: ${v}`).join(', ')}\n`;
+                message += `▸ Specs: ${Object.entries(item.variations).map(([k, v]) => `${k}: Rs. {v}`).join(', ')}\n`;
             }
             message += `\n`;
         });
 
         message += `───────────────────────\n\n`;
         message += `💰 *ＯＲＤＥＲ ＳＵＭＭＡＲＹ*\n`;
-        message += `▸ Subtotal: $${cartTotal.toFixed(2)}\n`;
-        message += `▸ Shipping: ${shipping === 0 && cartTotal > 0 ? 'Free' : `$${shipping.toFixed(2)}`}\n`;
-        message += `▸ Taxes: $${taxes.toFixed(2)}\n`;
+        message += `▸ Subtotal: Rs. ${cartTotal.toFixed(2)}\n`;
+        message += `▸ Shipping: ${shipping === 0 && cartTotal > 0 ? 'Free' : `Rs. Rs. {shipping.toFixed(2)}`}\n`;
+        message += `▸ Taxes: Rs. ${taxes.toFixed(2)}\n`;
         message += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
-        message += `🏆 *TOTAL DUE: $${grandTotal.toFixed(2)}*\n`;
+        message += `🏆 *TOTAL DUE: Rs. ${grandTotal.toFixed(2)}*\n`;
         message += `━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
         message += `💳 *Payment Method:* ${paymentMethod}\n`;
         message += `\n_Please confirm this order to proceed. Thank you!_ ✨`;
@@ -321,7 +325,7 @@ const Checkout = () => {
                             Order Summary ({cartItems.length} item{cartItems.length !== 1 && 's'})
                         </div>
                         <div className="flex items-center gap-3">
-                            <span className="text-sm font-black text-accent">${grandTotal.toFixed(2)}</span>
+                            <span className="text-sm font-black text-accent">Rs. {grandTotal.toFixed(2)}</span>
                             {summaryOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                         </div>
                     </button>
@@ -338,23 +342,23 @@ const Checkout = () => {
                                         <p className="text-[11px] text-[var(--text-secondary)]">Qty: {item.quantity}</p>
                                     </div>
                                     <p className="text-sm font-bold text-[var(--text-primary)] shrink-0">
-                                        ${((item.price || 0) * item.quantity).toFixed(2)}
+                                        Rs. {((item.price || 0) * item.quantity).toFixed(2)}
                                     </p>
                                 </div>
                             ))}
                             <div className="border-t border-[var(--surface-border)] pt-3 space-y-1.5 text-sm">
                                 <div className="flex justify-between text-[var(--text-secondary)]">
-                                    <span>Subtotal</span><span>${cartTotal.toFixed(2)}</span>
+                                    <span>Subtotal</span><span>Rs. {cartTotal.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-[var(--text-secondary)]">
                                     <span>Shipping</span>
-                                    <span>{shipping === 0 && cartTotal > 0 ? 'Free' : `$${shipping.toFixed(2)}`}</span>
+                                    <span>{shipping === 0 && cartTotal > 0 ? 'Free' : `Rs. ${shipping.toFixed(2)}`}</span>
                                 </div>
                                 <div className="flex justify-between text-[var(--text-secondary)]">
-                                    <span>Taxes (10%)</span><span>${taxes.toFixed(2)}</span>
+                                    <span>Taxes ({settings?.taxRate ?? 10}%)</span><span>Rs. {taxes.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between font-black text-[var(--text-primary)] pt-1 border-t border-[var(--surface-border)]">
-                                    <span>Total</span><span className="text-accent">${grandTotal.toFixed(2)}</span>
+                                    <span>Total</span><span className="text-accent">Rs. {grandTotal.toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>
@@ -491,7 +495,7 @@ const Checkout = () => {
                                                 )}
                                             </div>
                                             <p className="text-sm font-bold text-[var(--text-primary)] shrink-0">
-                                                ${((item.price || 0) * item.quantity).toFixed(2)}
+                                                Rs. {((item.price || 0) * item.quantity).toFixed(2)}
                                             </p>
                                         </div>
                                     ))}
@@ -501,7 +505,7 @@ const Checkout = () => {
                                 <div className="border-t border-[var(--surface-border)] pt-4 space-y-2.5 mb-4">
                                     <div className="flex justify-between text-sm text-[var(--text-secondary)]">
                                         <span>Subtotal</span>
-                                        <span className="font-semibold text-[var(--text-primary)]">${cartTotal.toFixed(2)}</span>
+                                        <span className="font-semibold text-[var(--text-primary)]">Rs. {cartTotal.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm text-[var(--text-secondary)]">
                                         <div className="flex items-center gap-2">
@@ -511,19 +515,19 @@ const Checkout = () => {
                                             )}
                                         </div>
                                         <span className="font-semibold text-[var(--text-primary)]">
-                                            {shipping === 0 && cartTotal > 0 ? '$0.00' : `$${shipping.toFixed(2)}`}
+                                            {shipping === 0 && cartTotal > 0 ? 'Rs. 0.00' : `Rs. ${shipping.toFixed(2)}`}
                                         </span>
                                     </div>
                                     <div className="flex justify-between text-sm text-[var(--text-secondary)]">
-                                        <span>Taxes (10%)</span>
-                                        <span className="font-semibold text-[var(--text-primary)]">${taxes.toFixed(2)}</span>
+                                        <span>Taxes ({settings?.taxRate ?? 10}%)</span>
+                                        <span className="font-semibold text-[var(--text-primary)]">Rs. {taxes.toFixed(2)}</span>
                                     </div>
                                 </div>
 
                                 {/* Grand Total */}
                                 <div className="border-t border-[var(--surface-border)] pt-4 mb-5 flex justify-between items-center">
                                     <span className="text-sm font-black tracking-widest uppercase text-[var(--text-primary)]">Total Due</span>
-                                    <span className="text-2xl font-black font-sans text-accent">${grandTotal.toFixed(2)}</span>
+                                    <span className="text-2xl font-black font-sans text-accent">Rs. {grandTotal.toFixed(2)}</span>
                                 </div>
 
                                 {/* Place Order CTA */}

@@ -446,7 +446,7 @@ const ProductList = () => {
                                         </td>
                                         <td className="px-4 py-4 text-[var(--text-primary)] text-xs">{catName}</td>
                                         <td className="px-4 py-4 text-[var(--text-primary)] text-xs">{subCatName}</td>
-                                        <td className="px-4 py-4 text-right">${product.price.toFixed(2)}</td>
+                                        <td className="px-4 py-4 text-right">Rs. {product.price.toFixed(2)}</td>
                                         <td className="px-4 py-4 text-right">{product.countInStock}</td>
                                         <td className="px-4 py-4">
                                             <span className={`px-2 py-1 text-[10px] uppercase font-bold tracking-wider ${product.countInStock > 10 ? 'bg-[var(--surface-color)] text-[var(--text-primary)]' :
@@ -491,7 +491,7 @@ const ProductList = () => {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold tracking-widest uppercase mb-2 text-[var(--text-primary)]">Price ($) *</label>
+                                <label className="block text-xs font-bold tracking-widest uppercase mb-2 text-[var(--text-primary)]">Price (Rs. ) *</label>
                                 <input
                                     type="number" step="0.01" name="price" value={formData.price} onChange={handleChange} required
                                     className="w-full border border-[var(--surface-border)] px-4 py-3 text-sm outline-none focus:border-[var(--color-electric-blue)]"

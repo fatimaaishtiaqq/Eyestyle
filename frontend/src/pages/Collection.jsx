@@ -296,7 +296,7 @@ const Collection = () => {
                             ))}
                             {priceRange && (
                                 <span className="flex items-center gap-1.5 bg-[var(--color-bg-section)] border border-[var(--surface-border)] text-[var(--text-primary)] px-3 py-1 text-[11px] tracking-wider uppercase font-medium rounded-sm">
-                                    {priceRange === 'under100' ? '< $100' : priceRange === '100to300' ? '$100 - $300' : '> $300'}
+                                    {priceRange === 'under100' ? '< Rs. 100' : priceRange === '100to300' ? 'Rs. 100 - Rs. 300' : '> Rs. 300'}
                                     <button onClick={removePriceFilter} className="hover:text-accent transition-colors"><X size={12} /></button>
                                 </span>
                             )}
@@ -463,9 +463,9 @@ const Collection = () => {
                                     <h3 className="text-xs font-bold tracking-widest uppercase mb-4 pb-2 border-b border-[var(--surface-border)]">Price Range</h3>
                                     <ul className="space-y-3 text-sm font-medium">
                                         {[
-                                            { value: 'under100', label: 'Under $100' },
-                                            { value: '100to300', label: '$100 – $300' },
-                                            { value: 'over300', label: 'Over $300' },
+                                            { value: 'under100', label: 'Under Rs. 100' },
+                                            { value: '100to300', label: 'Rs. 100 – Rs. 300' },
+                                            { value: 'over300', label: 'Over Rs. 300' },
                                         ].map(({ value, label }) => (
                                             <li key={value}>
                                                 <label className="flex items-center gap-3 cursor-pointer hover:text-accent transition-colors">

@@ -2,18 +2,21 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Trash2, ShoppingBag, Minus, Plus, ArrowRight, Shield, Truck } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useSettings } from '../context/SettingsContext';
 import { motion } from 'framer-motion';
 import ThreeBackground from '../components/ThreeBackground';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 
-const FREE_SHIPPING_THRESHOLD = 200;
-
 const Cart = () => {
     const { cartItems, removeFromCart, updateQuantity, cartSubtotal } = useCart();
+    const { settings } = useSettings();
 
-    // Free shipping auto-logic: $0 when subtotal >= threshold
-    const shipping = cartSubtotal <= 0 ? 0 : cartSubtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 15.00;
+    const FREE_SHIPPING_THRESHOLD = settings?.freeShippingThreshold ?? 200;
+    const shippingFee = settings?.shippingFee ?? 15;
+
+    // Free shipping auto-logic: Rs. 0 when subtotal >= threshold
+    const shipping = cartSubtotal <= 0 ? 0 : cartSubtotal >= FREE_SHIPPING_THRESHOLD ? 0 : shippingFee;
     const total = cartSubtotal + shipping;
 
     // Progress bar: correct math — e.g. 198.99/200 = 99.5%
@@ -137,7 +140,7 @@ const Cart = () => {
                                                 </Link>
 
                                                 <p className="text-sm font-semibold text-[var(--text-primary)] mb-1.5">
-                                                    ${(item.price || 0).toFixed(2)}
+                                                    Rs. {(item.price || 0).toFixed(2)}
                                                 </p>
 
                                                 {/* Variation pills */}
@@ -188,7 +191,7 @@ const Cart = () => {
 
                                                 {/* Line Total — hidden on smallest mobile, shown from sm: */}
                                                 <p className="hidden sm:block text-sm font-bold text-[var(--text-primary)] w-20 text-right">
-                                                    ${itemTotal}
+                                                    Rs. {itemTotal}
                                                 </p>
 
                                                 {/* Remove */}
@@ -229,7 +232,7 @@ const Cart = () => {
                                             </p>
                                         ) : (
                                             <p className="text-[12px] text-[var(--text-primary)]">
-                                                You are <strong className="font-bold">${freeShippingGap.toFixed(2)}</strong> away from <strong>FREE shipping</strong>
+                                                You are <strong className="font-bold">Rs. {freeShippingGap.toFixed(2)}</strong> away from <strong>FREE shipping</strong>
                                             </p>
                                         )}
                                     </div>
@@ -238,7 +241,7 @@ const Cart = () => {
                                     <div className="space-y-3 mb-4">
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-[var(--text-secondary)]">Subtotal</span>
-                                            <span className="text-sm font-semibold text-[var(--text-primary)]">${cartSubtotal.toFixed(2)}</span>
+                                            <span className="text-sm font-semibold text-[var(--text-primary)]">Rs. {cartSubtotal.toFixed(2)}</span>
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <div className="flex items-center gap-2">
@@ -248,7 +251,7 @@ const Cart = () => {
                                                 )}
                                             </div>
                                             <span className="text-sm font-semibold text-[var(--text-primary)]">
-                                                {hasUnlockedFreeShipping ? '$0.00' : `$${shipping.toFixed(2)}`}
+                                                {hasUnlockedFreeShipping ? 'Rs. 0.00' : `Rs. ${shipping.toFixed(2)}`}
                                             </span>
                                         </div>
                                         <div className="flex justify-between items-center">
@@ -260,7 +263,7 @@ const Cart = () => {
                                     {/* ── Grand Total ─────────────────────────── */}
                                     <div className="border-t border-[var(--surface-border)] pt-4 mb-5 flex justify-between items-center">
                                         <span className="text-sm font-bold tracking-widest uppercase text-[var(--text-primary)]">Grand Total</span>
-                                        <span className="text-[22px] font-black font-sans text-accent">${total.toFixed(2)}</span>
+                                        <span className="text-[22px] font-black font-sans text-accent">Rs. {total.toFixed(2)}</span>
                                     </div>
 
                                     {/* ── Checkout Button ─────────────────────── */}
@@ -295,7 +298,7 @@ const Cart = () => {
                     <div className="flex items-center justify-between px-4 h-16 max-w-[1400px] mx-auto">
                         <div className="flex items-baseline gap-2">
                             <span className="text-[10px] font-black tracking-[0.2em] uppercase text-[var(--text-muted)] opacity-60">Subtotal</span>
-                            <span className="text-base font-black text-[var(--text-primary)] tracking-tight">${cartSubtotal.toFixed(2)}</span>
+                            <span className="text-base font-black text-[var(--text-primary)] tracking-tight">Rs. {cartSubtotal.toFixed(2)}</span>
                         </div>
                         <Link
                             to="/checkout"

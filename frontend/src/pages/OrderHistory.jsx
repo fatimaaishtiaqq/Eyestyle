@@ -123,7 +123,7 @@ const OrderHistory = () => {
                                             </div>
                                             <div>
                                                 <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--text-muted)]">Total</p>
-                                                <p className="text-[13px] font-bold text-accent">${order.totalPrice.toFixed(2)}</p>
+                                                <p className="text-[13px] font-bold text-accent">Rs. {order.totalPrice.toFixed(2)}</p>
                                             </div>
                                         </div>
 
@@ -149,7 +149,7 @@ const OrderHistory = () => {
                                                             )}
                                                         </div>
                                                     </div>
-                                                    <span className="text-sm font-semibold text-[var(--text-primary)] shrink-0">${item.price.toFixed(2)}</span>
+                                                    <span className="text-sm font-semibold text-[var(--text-primary)] shrink-0">Rs. {item.price.toFixed(2)}</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -240,7 +240,7 @@ const OrderHistory = () => {
                                                     )}
                                                 </td>
                                                 <td className="py-3 text-center text-sm text-[var(--text-secondary)]">{item.qty}</td>
-                                                <td className="py-3 text-right text-sm font-semibold text-[var(--text-primary)]">${item.price.toFixed(2)}</td>
+                                                <td className="py-3 text-right text-sm font-semibold text-[var(--text-primary)]">Rs. {item.price.toFixed(2)}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -251,22 +251,22 @@ const OrderHistory = () => {
                                     <div className="flex justify-between text-sm text-[var(--text-secondary)]">
                                         <span>Subtotal</span>
                                         <span className="font-semibold text-[var(--text-primary)]">
-                                            ${(selectedOrder.totalPrice - (selectedOrder.shippingPrice || 0) - (selectedOrder.taxPrice || 0)).toFixed(2)}
+                                            Rs. {(selectedOrder.totalPrice - (selectedOrder.shippingPrice || 0) - (selectedOrder.taxPrice || 0)).toFixed(2)}
                                         </span>
                                     </div>
                                     <div className="flex justify-between text-sm text-[var(--text-secondary)]">
                                         <span>Shipping</span>
-                                        <span className="font-semibold text-[var(--text-primary)]">${(selectedOrder.shippingPrice || 0).toFixed(2)}</span>
+                                        <span className="font-semibold text-[var(--text-primary)]">Rs. {(selectedOrder.shippingPrice || 0).toFixed(2)}</span>
                                     </div>
                                     {(selectedOrder.taxPrice || 0) > 0 && (
                                         <div className="flex justify-between text-sm text-[var(--text-secondary)]">
                                             <span>Tax</span>
-                                            <span className="font-semibold text-[var(--text-primary)]">${selectedOrder.taxPrice.toFixed(2)}</span>
+                                            <span className="font-semibold text-[var(--text-primary)]">Rs. {selectedOrder.taxPrice.toFixed(2)}</span>
                                         </div>
                                     )}
                                     <div className="flex justify-between items-center pt-3 border-t border-[var(--surface-border)]">
                                         <span className="text-sm font-black tracking-widest uppercase text-[var(--text-primary)]">Total</span>
-                                        <span className="text-xl font-black text-accent">${selectedOrder.totalPrice.toFixed(2)}</span>
+                                        <span className="text-xl font-black text-accent">Rs. {selectedOrder.totalPrice.toFixed(2)}</span>
                                     </div>
                                 </div>
 

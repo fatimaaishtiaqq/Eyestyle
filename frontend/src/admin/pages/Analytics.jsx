@@ -96,7 +96,7 @@ const Analytics = () => {
                                 <div className="bg-[var(--surface-color)] text-[var(--text-primary)] p-3 rounded-none"><DollarSign size={24} /></div>
                                 <div>
                                     <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--text-primary)]">Gross Sales</p>
-                                    <h3 className="text-2xl font-sans font-bold text-[var(--text-primary)]">${metrics.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+                                    <h3 className="text-2xl font-sans font-bold text-[var(--text-primary)]">Rs. {metrics.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
                                 </div>
                             </div>
                             <div className="flex items-center gap-1 text-xs text-[var(--text-primary)] font-bold">
@@ -140,7 +140,7 @@ const Analytics = () => {
                                     <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="var(--surface-border)" vertical={false} />
                                         <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
-                                        <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
+                                        <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `Rs. ${val}`} />
                                         <Tooltip
                                             contentStyle={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--surface-border)', color: 'var(--text-primary)' }}
                                             itemStyle={{ color: 'var(--color-electric-blue)', fontWeight: 'bold' }}

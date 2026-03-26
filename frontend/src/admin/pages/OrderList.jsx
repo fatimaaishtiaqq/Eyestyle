@@ -183,7 +183,7 @@ const OrderList = () => {
                                     <td className="px-6 py-4 font-bold text-[var(--text-primary)] text-xs uppercase tracking-widest">{order._id ? String(order._id).substring(18) : 'N/A'}</td>
                                     <td className="px-6 py-4 text-[var(--text-primary)]">{order.user?.name || 'Guest'}</td>
                                     <td className="px-6 py-4 text-[var(--text-primary)]">{new Date(order.createdAt || Date.now()).toLocaleDateString()}</td>
-                                    <td className="px-6 py-4 text-right font-medium">${(order.totalPrice || 0).toFixed(2)}</td>
+                                    <td className="px-6 py-4 text-right font-medium">Rs. {(order.totalPrice || 0).toFixed(2)}</td>
                                     <td className="px-6 py-4">
                                         <select
                                             value={order.status || 'pending'}
@@ -253,7 +253,7 @@ const OrderList = () => {
                                     <div className="flex justify-between"><span className="text-[var(--text-primary)]">Status:</span> <span className="font-bold uppercase tracking-wider">{selectedOrder.status}</span></div>
                                     <div className="flex justify-between"><span className="text-[var(--text-primary)]">Date:</span> <span>{new Date(selectedOrder.createdAt).toLocaleString()}</span></div>
                                     <div className="flex justify-between"><span className="text-[var(--text-primary)]">Payment Method:</span> <span>{selectedOrder.paymentMethod}</span></div>
-                                    <div className="flex justify-between pt-2 border-t border-[var(--surface-border)] mt-2 font-bold mb-4"><span>Total Amount:</span> <span>${selectedOrder.totalPrice?.toFixed(2)}</span></div>
+                                    <div className="flex justify-between pt-2 border-t border-[var(--surface-border)] mt-2 font-bold mb-4"><span>Total Amount:</span> <span>Rs. {selectedOrder.totalPrice?.toFixed(2)}</span></div>
                                 </div>
 
                                 <div className="mt-6 flex flex-col gap-2">
@@ -318,10 +318,10 @@ const OrderList = () => {
                                         <img src={resolveImageUrl(item.image)} alt={item.name} className="w-16 h-16 object-cover border border-[var(--surface-border)]" />
                                         <div className="flex-1">
                                             <p className="text-sm font-bold">{item.name}</p>
-                                            <p className="text-xs text-[var(--text-primary)]">Qty: {item.qty} x ${item.price.toFixed(2)}</p>
+                                            <p className="text-xs text-[var(--text-primary)]">Qty: {item.qty} x Rs. {item.price.toFixed(2)}</p>
                                         </div>
                                         <div className="font-bold text-sm">
-                                            ${(item.qty * item.price).toFixed(2)}
+                                            Rs. {(item.qty * item.price).toFixed(2)}
                                         </div>
                                     </div>
                                 ))}
@@ -378,7 +378,7 @@ const OrderList = () => {
                                         <tr key={idx} className="border-b border-[var(--surface-border)]">
                                             <td className="py-4 text-[var(--text-primary)]">{item.name}</td>
                                             <td className="py-4 text-center text-[var(--text-primary)]">{item.qty}</td>
-                                            <td className="py-4 text-right text-[var(--text-primary)] font-medium">${item.price.toFixed(2)}</td>
+                                            <td className="py-4 text-right text-[var(--text-primary)] font-medium">Rs. {item.price.toFixed(2)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -388,19 +388,19 @@ const OrderList = () => {
                                 <div className="w-64 space-y-3">
                                     <div className="flex justify-between text-sm">
                                         <span className="text-[var(--text-primary)]">Subtotal</span>
-                                        <span className="font-medium text-[var(--text-primary)]">${(selectedOrder.itemsPrice || (selectedOrder.totalPrice - selectedOrder.shippingPrice - selectedOrder.taxPrice)).toFixed(2)}</span>
+                                        <span className="font-medium text-[var(--text-primary)]">Rs. {(selectedOrder.itemsPrice || (selectedOrder.totalPrice - selectedOrder.shippingPrice - selectedOrder.taxPrice)).toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-[var(--text-primary)]">Shipping</span>
-                                        <span className="font-medium text-[var(--text-primary)]">${(selectedOrder.shippingPrice || 0).toFixed(2)}</span>
+                                        <span className="font-medium text-[var(--text-primary)]">Rs. {(selectedOrder.shippingPrice || 0).toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm">
                                         <span className="text-[var(--text-primary)]">Tax</span>
-                                        <span className="font-medium text-[var(--text-primary)]">${(selectedOrder.taxPrice || 0).toFixed(2)}</span>
+                                        <span className="font-medium text-[var(--text-primary)]">Rs. {(selectedOrder.taxPrice || 0).toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between font-bold text-lg pt-3 border-t border-[var(--surface-border)] text-[var(--text-primary)]">
                                         <span>Total</span>
-                                        <span>${(selectedOrder.totalPrice || 0).toFixed(2)}</span>
+                                        <span>Rs. {(selectedOrder.totalPrice || 0).toFixed(2)}</span>
                                     </div>
                                 </div>
                             </div>
