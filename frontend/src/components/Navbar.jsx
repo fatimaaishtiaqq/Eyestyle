@@ -244,47 +244,42 @@ const Navbar = () => {
                 </div>
             </div>
 
-            {/* Pro Fix: Conditional Rendering ensures component UNMOUNTS on close */}
-            <AnimatePresence>
-                {mobileMenuOpen && (
-                    <motion.div
-                        key="pro-mobile-menu"
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                        className="lg:hidden bg-[var(--bg-color)] border-t border-[var(--surface-border)] absolute w-full shadow-2xl overflow-hidden z-[40]"
-                    >
-                        <div className="px-6 py-10 space-y-8 flex flex-col">
-                            {categories.map((link) => (
-                                <div key={link.name} className="flex flex-col space-y-4">
-                                    <Link
-                                        to={link.path}
-                                        onClick={() => setMobileMenuOpen(false)}
-                                        className="text-lg font-serif font-bold text-[var(--text-primary)] tracking-widest uppercase"
-                                    >
-                                        {link.name}
-                                    </Link>
-                                    {link.subcategories && (
-                                        <div className="flex flex-col pl-6 space-y-3 border-l-2 border-[var(--surface-border)]">
-                                            {link.subcategories.map(sub => (
-                                                <Link
-                                                    key={sub.name}
-                                                    to={sub.path}
-                                                    onClick={() => setMobileMenuOpen(false)}
-                                                    className="text-sm font-sans text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors tracking-wide"
-                                                >
-                                                    {sub.name}
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    )}
+            {/* Mobile Menu with Pure CSS Transitions to fix first-load stuck bug */}
+            <div
+                className={`lg:hidden bg-[var(--bg-color)] absolute w-full shadow-2xl overflow-hidden z-[40] transition-all duration-400 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                    mobileMenuOpen 
+                    ? 'max-h-[85vh] opacity-100 border-t border-[var(--surface-border)] pointer-events-auto' 
+                    : 'max-h-0 opacity-0 border-t-0 pointer-events-none'
+                }`}
+            >
+                <div className="px-6 py-10 space-y-8 flex flex-col overflow-y-auto max-h-[85vh]">
+                    {categories.map((link) => (
+                        <div key={link.name} className="flex flex-col space-y-4">
+                            <Link
+                                to={link.path}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="text-lg font-serif font-bold text-[var(--text-primary)] tracking-widest uppercase"
+                            >
+                                {link.name}
+                            </Link>
+                            {link.subcategories && (
+                                <div className="flex flex-col pl-6 space-y-3 border-l-2 border-[var(--surface-border)]">
+                                    {link.subcategories.map(sub => (
+                                        <Link
+                                            key={sub.name}
+                                            to={sub.path}
+                                            onClick={() => setMobileMenuOpen(false)}
+                                            className="text-sm font-sans text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors tracking-wide"
+                                        >
+                                            {sub.name}
+                                        </Link>
+                                    ))}
                                 </div>
-                            ))}
+                            )}
                         </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    ))}
+                </div>
+            </div>
         </header>
     );
 };
