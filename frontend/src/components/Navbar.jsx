@@ -131,7 +131,7 @@ const Navbar = () => {
                     <div className="flex items-center justify-start gap-12 z-10 flex-shrink min-w-0">
                         {/* Logo */}
                         <div className="flex-shrink min-w-0 text-left">
-                            <Link to="/" className="inline-flex items-center group px-1 max-w-full">
+                            <Link to="/" onClick={() => setMobileMenuOpen(false)} className="inline-flex items-center group px-1 max-w-full">
                                 <span className="text-base xs:text-lg sm:text-2xl font-serif font-bold tracking-[0.1em] xs:tracking-widest sm:tracking-[0.2em] text-[var(--text-primary)] transition-all duration-500 group-hover:tracking-[0.2em] sm:group-hover:tracking-[0.3em] uppercase truncate w-full">EYESTYLE</span>
                             </Link>
                         </div>
@@ -240,15 +240,15 @@ const Navbar = () => {
                 </div>
             </div>
 
-            {/* Mobile Menu */}
-            <AnimatePresence>
+            <AnimatePresence mode="wait">
                 {mobileMenuOpen && (
                     <motion.div
+                        key="mobile-menu-overlay"
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                        className="lg:hidden bg-[var(--bg-color)] border-t border-[var(--surface-border)] absolute w-full shadow-2xl overflow-hidden"
+                        exit={{ height: 0, opacity: 0, transition: { duration: 0.2 } }}
+                        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                        className="lg:hidden bg-[var(--bg-color)] border-t border-[var(--surface-border)] absolute w-full shadow-2xl overflow-hidden z-[40]"
                     >
                         <div className="px-6 py-10 space-y-8 flex flex-col">
                             {categories.map((link) => (
