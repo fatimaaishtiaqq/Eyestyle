@@ -80,7 +80,7 @@ const ProductCard = ({ product }) => {
             </div>
 
             {/* Product Details - Mockup matched styling */}
-            <div className="flex flex-col p-5 bg-[var(--card-bg)] flex-grow">
+            <div className="flex flex-col p-3 xs:p-4 sm:p-5 bg-[var(--card-bg)] flex-grow">
                 
                 {/* Product Meta */}
                 <div className="flex items-center gap-2 mb-3">
@@ -88,20 +88,20 @@ const ProductCard = ({ product }) => {
                          <img src="/icons/glasses-icon.png" alt="icon" className="w-full h-full object-cover opacity-50" onError={(e) => { e.target.style.display = 'none'; }} />
                     </div>
                     <Link to={`/product/${product._id || product.id}`}>
-                        <h3 className="font-sans text-[16px] font-bold text-[var(--text-primary)] transition-colors hover:text-[var(--color-primary)]">
+                        <h3 className="font-sans text-[14px] xs:text-[16px] font-bold text-[var(--text-primary)] transition-colors hover:text-[var(--color-primary)] line-clamp-2">
                             {product.name}
                         </h3>
                     </Link>
                 </div>
                 
-                <p className="font-sans text-[13px] text-[var(--text-secondary)] mb-1 truncate">
+                <p className="font-sans text-[12px] sm:text-[13px] text-[var(--text-secondary)] mb-1 truncate">
                     {product.description || "Minimal & stylish eyewear"}
                 </p>
                 
 
 
                 <div className="mt-auto pt-2">
-                    <p className="font-sans font-bold text-[var(--text-primary)] text-xl mb-4">
+                    <p className="font-sans font-bold text-[var(--text-primary)] text-lg sm:text-xl mb-4">
                         Rs. {product.price ? product.price.toFixed(2) : '0.00'}
                     </p>
                     

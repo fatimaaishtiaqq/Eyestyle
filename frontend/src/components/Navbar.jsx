@@ -124,7 +124,7 @@ const Navbar = () => {
                         {/* Logo */}
                         <div className="flex-shrink min-w-0 text-left">
                             <Link to="/" className="inline-flex items-center group px-1 max-w-full">
-                                <span className="text-lg sm:text-2xl font-serif font-bold tracking-widest sm:tracking-[0.2em] text-[var(--text-primary)] transition-all duration-500 group-hover:tracking-[0.2em] sm:group-hover:tracking-[0.3em] uppercase truncate w-full">EYESTYLE</span>
+                                <span className="text-base xs:text-lg sm:text-2xl font-serif font-bold tracking-[0.1em] xs:tracking-widest sm:tracking-[0.2em] text-[var(--text-primary)] transition-all duration-500 group-hover:tracking-[0.2em] sm:group-hover:tracking-[0.3em] uppercase truncate w-full">EYESTYLE</span>
                             </Link>
                         </div>
 
@@ -180,7 +180,7 @@ const Navbar = () => {
                     </div>
 
                     {/* Icons (Far Right) */}
-                    <div className="flex items-center justify-end gap-2 sm:gap-5 lg:gap-8 flex-1 z-20">
+                    <div className="flex items-center justify-end gap-1.5 xs:gap-3 sm:gap-5 lg:gap-8 flex-1 z-20">
                         <div className="flex items-center relative">
                             {isSearchOpen ? (
                                 <form onSubmit={handleSearchSubmit} className="flex items-center border-b border-[var(--text-primary)] pb-1 overflow-hidden bg-[var(--bg-color)] absolute right-0 top-1/2 -translate-y-1/2 z-[60] w-[160px] sm:w-[220px]">

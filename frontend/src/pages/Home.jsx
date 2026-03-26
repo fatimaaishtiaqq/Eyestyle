@@ -274,7 +274,7 @@ const Home = () => {
                             <h2 className="text-[clamp(14px,2vw,18px)] font-sans tracking-[0.5em] font-black uppercase mb-6 text-white/80 border-b-2 md:border-b-0 md:border-l-2 md:pl-4 border-white pb-2 md:pb-0">
                                 {heroSlides[currentSlide].subtitle}
                             </h2>
-                            <h1 className="text-[48px] leading-[1.1] font-serif font-bold mb-6 text-white tracking-tighter w-full">
+                            <h1 className="text-[32px] sm:text-[48px] leading-[1.1] font-serif font-bold mb-6 text-white tracking-tighter w-full">
                                 {heroSlides[currentSlide].title.split(' ').slice(0, 2).join(' ')}<br />
                                 <span className="text-outline-white italic">{heroSlides[currentSlide].title.split(' ').slice(2).join(' ')}</span>
                             </h1>
@@ -347,7 +347,7 @@ const Home = () => {
                         }
                     `}</style>
                     <div className="max-w-[1600px] mx-auto px-4 md:px-10 mb-20 text-center">
-                        <h3 className="text-5xl md:text-6xl font-serif font-black text-[var(--text-primary)] uppercase tracking-tighter">OUR REFINED<br /><span className="italic font-light">SELECTIONS</span></h3>
+                        <h3 className="text-3xl sm:text-5xl md:text-6xl font-serif font-black text-[var(--text-primary)] uppercase tracking-tighter">OUR REFINED<br /><span className="italic font-light">SELECTIONS</span></h3>
                     </div>
 
                     <div className="w-full pb-10">
@@ -415,9 +415,9 @@ const Home = () => {
                         className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-105 group-hover:scale-100 parallax-img"
                     />
                     <div className="absolute inset-0 bg-black/40 group-hover:bg-black/10 transition-all"></div>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center group-hover:scale-110 transition-transform duration-700">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center group-hover:scale-110 transition-transform duration-700 p-4">
                         <h2 className="text-[10px] tracking-[1em] mb-4 text-white/60">FOR THEM</h2>
-                        <h3 className="text-7xl md:text-9xl font-serif font-black text-white tracking-widest uppercase">MEN</h3>
+                        <h3 className="text-5xl md:text-9xl font-serif font-black text-white tracking-widest uppercase text-center">MEN</h3>
                     </div>
                 </Link>
                 <Link to="/collections/women" className="relative flex-1 group overflow-hidden">
@@ -427,9 +427,9 @@ const Home = () => {
                         className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-105 group-hover:scale-100 parallax-img"
                     />
                     <div className="absolute inset-0 bg-black/40 group-hover:bg-black/10 transition-all"></div>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center group-hover:scale-110 transition-transform duration-700">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center group-hover:scale-110 transition-transform duration-700 p-4">
                         <h2 className="text-[10px] tracking-[1em] mb-4 text-white/60">FOR HER</h2>
-                        <h3 className="text-7xl md:text-9xl font-serif font-black text-white tracking-widest uppercase">WOMEN</h3>
+                        <h3 className="text-5xl md:text-9xl font-serif font-black text-white tracking-widest uppercase text-center">WOMEN</h3>
                     </div>
                 </Link>
             </section>
