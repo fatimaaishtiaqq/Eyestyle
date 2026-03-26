@@ -397,7 +397,7 @@ const Home = () => {
                     </Link>
                 </div>
 
-                <div className="max-w-[1600px] mx-auto grid grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 gap-6 px-4 md:px-10 products-grid">
+                <div className="max-w-[1600px] mx-auto grid grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-6 px-3 sm:px-6 md:px-10 products-grid">
                     {trendingProducts.slice(0, 5).map((product) => (
                         <div key={product._id} className="reveal-item">
                             <ProductCard product={product} />
@@ -441,7 +441,7 @@ const Home = () => {
                     <h3 className="mb-[24px] opacity-70 font-light">Highly sought after by collectors</h3>
                 </div>
 
-                <div className="max-w-[1600px] mx-auto grid grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 gap-6 px-4 md:px-10 products-grid">
+                <div className="max-w-[1600px] mx-auto grid grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-6 px-3 sm:px-6 md:px-10 products-grid">
                     {trendingProducts.slice(5, 15).map((product) => (
                         <ProductCard key={product._id} product={product} />
                     ))}
