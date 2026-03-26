@@ -20,6 +20,7 @@ const Navbar = () => {
     const { wishlistCount } = useWishlist();
     const { theme, toggleTheme } = useTheme();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [user, setUser] = useState(null);
     const [categories, setCategories] = useState([]);
@@ -40,6 +41,13 @@ const Navbar = () => {
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
+
+    // Robust Mobile Navigation: Close menu and scroll UP on any URL change
+    useEffect(() => {
+        setMobileMenuOpen(false);
+        setIsSearchOpen(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [location.pathname, location.search]);
 
     useEffect(() => {
         const fetchCategories = async () => {
