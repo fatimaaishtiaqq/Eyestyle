@@ -78,7 +78,7 @@ const Contact = () => {
                                 <textarea required rows="4" className="w-full bg-[var(--color-bg-section)] border border-[var(--surface-border)] px-5 py-4 outline-none focus:border-accent transition-all font-sans text-sm text-[var(--text-primary)] resize-none rounded-none"></textarea>
                             </div>
 
-                            <button type="submit" className="w-full h-16 bg-[var(--text-primary)] text-[var(--color-bg-section)] text-[10px] font-black tracking-[0.5em] uppercase hover:bg-accent hover:text-white transition-all transform hover:-translate-y-1">
+                            <button type="submit" className="w-full h-16 btn-primary text-[10px] font-black tracking-[0.5em] uppercase transition-all transform hover:-translate-y-1">
                                 DISPATCH MESSAGE
                             </button>
                             {status && (

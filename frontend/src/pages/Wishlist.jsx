@@ -40,7 +40,7 @@ const Wishlist = () => {
                         <p className="text-sm font-sans opacity-60 mb-10 max-w-sm mx-auto leading-relaxed">
                             Discover our latest masterpieces and save your favorites to your personal gallery.
                         </p>
-                        <Link to="/collections/all" className="inline-block bg-[var(--text-primary)] text-[var(--bg-color)] px-10 py-4 text-[10px] font-black tracking-[0.4em] uppercase transition-all hover:bg-accent hover:text-white shadow-lg active:scale-95">
+                        <Link to="/collections/all" className="btn-primary inline-block px-10 py-4 text-[10px] font-black tracking-[0.4em] uppercase shadow-lg active:scale-95">
                             START EXPLORING
                         </Link>
                     </motion.div>

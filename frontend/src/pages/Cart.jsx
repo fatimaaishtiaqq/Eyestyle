@@ -72,7 +72,7 @@ const Cart = () => {
                         </div>
                         <Link
                             to="/collections/all"
-                            className="flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+                            className="flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors"
                         >
                             Continue Shopping <ArrowRight size={14} />
                         </Link>
@@ -269,7 +269,7 @@ const Cart = () => {
                                     {/* ── Checkout Button ─────────────────────── */}
                                     <Link
                                         to="/checkout"
-                                        className="block w-full bg-[var(--text-primary)] text-[var(--bg-color)] py-[14px] text-[11px] font-black tracking-[0.4em] uppercase text-center hover:bg-accent hover:text-white transition-colors"
+                                        className="block w-full bg-[var(--color-primary)] text-white py-[14px] text-[11px] font-black tracking-[0.4em] uppercase text-center hover:bg-[var(--color-primary-hover)] hover:text-white transition-colors shadow-sm"
                                     >
                                         Proceed to Checkout
                                     </Link>
@@ -302,7 +302,7 @@ const Cart = () => {
                         </div>
                         <Link
                             to="/checkout"
-                            className="bg-[var(--text-primary)] text-[var(--bg-color)] h-10 px-6 flex items-center text-[11px] font-black tracking-[0.2em] uppercase hover:bg-accent hover:text-white transition-all shadow-md active:scale-95"
+                            className="bg-[var(--color-primary)] text-white h-10 px-6 flex items-center text-[11px] font-black tracking-[0.2em] uppercase hover:bg-[var(--color-primary-hover)] hover:text-white transition-all shadow-md active:scale-95"
                         >
                             Checkout
                         </Link>

@@ -10,6 +10,9 @@ const CategoryList = () => {
 
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredCategories = categories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
     // Add Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -202,7 +205,7 @@ const CategoryList = () => {
                 </div>
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="btn-primary text-[var(--bg-color)] px-5 py-2 flex items-center gap-2 uppercase tracking-widest text-xs font-bold hover:bg-black transition-colors"
+                    className="btn-primary text-[var(--bg-color)] px-5 py-2 flex items-center gap-2 uppercase tracking-widest text-xs font-bold transition-colors"
                 >
                     <Plus size={16} /> Add Category
                 </button>
@@ -213,7 +216,7 @@ const CategoryList = () => {
                 <div className="p-4 border-b border-[var(--surface-border)] flex justify-between items-center">
                     <div className="flex items-center bg-[var(--surface-color)] px-3 py-2 border border-[var(--surface-border)] w-64">
                         <Search size={14} className="text-[var(--text-primary)] mr-2" />
-                        <input type="text" placeholder="Search categories..." className="bg-transparent border-none outline-none text-xs w-full" />
+                        <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search categories..." className="bg-transparent border-none outline-none text-xs w-full" />
                     </div>
                 </div>
                 <table className="w-full text-left text-sm">
@@ -230,9 +233,9 @@ const CategoryList = () => {
                     <tbody className="divide-y divide-[var(--surface-border)]">
                         {loading ? (
                             <tr><td colSpan="5" className="px-6 py-8 text-center text-[var(--text-primary)] italic">Loading categories...</td></tr>
-                        ) : categories.length === 0 ? (
+                        ) : filteredCategories.length === 0 ? (
                             <tr><td colSpan="5" className="px-6 py-8 text-center text-[var(--text-primary)] italic">No categories found.</td></tr>
-                        ) : categories.map((cat) => (
+                        ) : filteredCategories.map((cat) => (
                             <tr key={cat._id} className="hover:bg-surface">
                                 <td className="px-6 py-4">
                                     {cat.image ? (
@@ -250,8 +253,8 @@ const CategoryList = () => {
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-right flex justify-end gap-3">
-                                    <button onClick={() => openEditModal(cat)} className="text-[var(--text-primary)] hover:text-[var(--text-primary)]"><Edit size={16} /></button>
-                                    <button onClick={() => handleDelete(cat._id)} className="text-[var(--text-primary)] hover:text-[var(--text-primary)]"><Trash2 size={16} /></button>
+                                    <button onClick={() => openEditModal(cat)} className="text-[var(--color-primary)] hover:brightness-150 transition-colors"><Edit size={16} /></button>
+                                    <button onClick={() => handleDelete(cat._id)} className="text-[var(--color-primary)] hover:brightness-150 transition-colors"><Trash2 size={16} /></button>
                                 </td>
                             </tr>
                         ))}
@@ -320,7 +323,7 @@ const CategoryList = () => {
                             <button
                                 type="submit"
                                 disabled={submitting}
-                                className={`w-full btn-primary text-[var(--bg-color)] py-3 uppercase tracking-widest text-xs font-bold hover:bg-black transition-colors mt-4 ${submitting ? 'opacity-70' : ''}`}
+                                className={`w-full btn-primary text-[var(--bg-color)] py-3 uppercase tracking-widest text-xs font-bold transition-colors mt-4 ${submitting ? 'opacity-70' : ''}`}
                             >
                                 {submitting ? 'Creating...' : 'Create Category'}
                             </button>
@@ -390,7 +393,7 @@ const CategoryList = () => {
                             <button
                                 type="submit"
                                 disabled={submitting}
-                                className={`w-full btn-primary text-[var(--bg-color)] py-3 uppercase tracking-widest text-xs font-bold hover:bg-black transition-colors mt-4 ${submitting ? 'opacity-70' : ''}`}
+                                className={`w-full btn-primary text-[var(--bg-color)] py-3 uppercase tracking-widest text-xs font-bold transition-colors mt-4 ${submitting ? 'opacity-70' : ''}`}
                             >
                                 {submitting ? 'Saving...' : 'Save Category'}
                             </button>

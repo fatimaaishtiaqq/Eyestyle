@@ -213,7 +213,7 @@ const ThreeBackground = ({ variant = 'default' }) => {
             className="fixed inset-0 hidden md:block"
             style={{
                 zIndex: 0,
-                opacity: 0.45,
+                opacity: 0.35,
                 background: 'transparent',
                 pointerEvents: 'none',
             }}

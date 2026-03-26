@@ -41,26 +41,14 @@ const ProductCard = ({ product }) => {
 
     return (
         <motion.div
-            className="group relative flex flex-col w-full card-premium overflow-hidden border border-[var(--surface-border)] shadow-sm hover:shadow-2xl transition-shadow duration-500"
+            className="group flex flex-col w-full card-premium overflow-hidden"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.05 }}
-            whileHover={{
-                y: -10,
-                rotateX: 10,
-                rotateY: -10,
-                perspective: 1000
-            }}
-            transition={{
-                type: "spring",
-                stiffness: 300,
-                damping: 20,
-                duration: 0.6
-            }}
         >
-            <div className="relative overflow-hidden aspect-[3/4] bg-[var(--surface-color)] cursor-pointer min-h-0 perspective-1000">
+            <div className="relative overflow-hidden aspect-[4/3] bg-[var(--surface-color)] cursor-pointer">
                 <Link to={`/product/${product._id || product.id}`} className="block w-full h-full">
                     <motion.img
                         src={(() => {
@@ -78,62 +66,51 @@ const ProductCard = ({ product }) => {
                         })()}
                         alt={product.name || 'Product'}
                         loading="lazy"
-                        className="w-full h-full object-cover aspect-[3/4] origin-center z-0"
-                        animate={{
-                            scale: isHovered ? 1.1 : 1,
-                            z: isHovered ? 50 : 0
-                        }}
-                        transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                        className="w-full h-full object-cover object-center z-0 transition-transform duration-700 ease-out"
+                        style={{ transform: isHovered ? 'scale(1.05)' : 'scale(1)' }}
                     />
                 </Link>
 
-                {/* Glassmorphic Badge for Hover */}
-                <AnimatePresence>
-                    {isHovered && (
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            className="absolute inset-0 bg-black/10 backdrop-blur-[2px] pointer-events-none"
-                        />
-                    )}
-                </AnimatePresence>
-
                 <button
                     onClick={handleToggleWishlist}
-                    className={`absolute top-4 right-4 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 shadow-xl ${isInWishlist(product.id || product._id) ? 'bg-[var(--bg-color)] text-accent' : 'bg-[var(--bg-color)]/80 backdrop-blur-md text-[var(--text-primary)] hover:bg-[var(--bg-color)] hover:scale-110'}`}
+                    className={`absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${isInWishlist(product.id || product._id) ? 'bg-white text-rose-500' : 'bg-white/90 backdrop-blur-md text-gray-500 hover:bg-white hover:scale-110'}`}
                 >
-                    <Heart size={18} fill={isInWishlist(product.id || product._id) ? "currentColor" : "none"} stroke="currentColor" />
+                    <Heart size={16} fill={isInWishlist(product.id || product._id) ? "currentColor" : "none"} stroke="currentColor" />
                 </button>
-
-                {/* Quick Add Button with GSAP-like feel */}
-                <motion.div
-                    className="absolute bottom-0 left-0 w-full z-10"
-                    initial={{ y: '100%' }}
-                    animate={{ y: isHovered ? '0%' : '100%' }}
-                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-                >
-                    <button
-                        onClick={handleAddToCart}
-                        className="w-full bg-[var(--text-primary)] text-[var(--bg-color)] py-5 text-[10px] tracking-[0.3em] flex items-center justify-center gap-2 uppercase font-black transition-all hover:bg-accent hover:text-white"
-                    >
-                        ADD TO CART
-                    </button>
-                </motion.div>
             </div>
 
-            {/* Product Details */}
-            <div className="pt-6 pb-5 px-5 text-center bg-[var(--bg-color)] relative z-20">
-                <Link to={`/product/${product._id || product.id}`}>
-                    <h3 className="font-serif text-[15px] font-bold text-[var(--text-primary)] uppercase tracking-[0.1em] truncate mb-2 group-hover:text-accent transition-colors duration-300">
-                        {product.name}
-                    </h3>
-                </Link>
-                <div className="flex flex-col items-center gap-2">
-                    <span className="w-8 h-[1px] bg-[var(--surface-border)]"></span>
-                    <p className="font-sans font-black text-[var(--text-primary)] text-[14px] tracking-widest">
+            {/* Product Details - Mockup matched styling */}
+            <div className="flex flex-col p-5 bg-[var(--card-bg)] flex-grow">
+                
+                {/* Product Meta */}
+                <div className="flex items-center gap-2 mb-3">
+                    <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0 bg-[var(--surface-border)]">
+                         <img src="/icons/glasses-icon.png" alt="icon" className="w-full h-full object-cover opacity-50" onError={(e) => { e.target.style.display = 'none'; }} />
+                    </div>
+                    <Link to={`/product/${product._id || product.id}`}>
+                        <h3 className="font-sans text-[16px] font-bold text-[var(--text-primary)] transition-colors hover:text-[var(--color-primary)]">
+                            {product.name}
+                        </h3>
+                    </Link>
+                </div>
+                
+                <p className="font-sans text-[13px] text-[var(--text-secondary)] mb-1 truncate">
+                    {product.description || "Minimal & stylish eyewear"}
+                </p>
+                
+
+
+                <div className="mt-auto pt-2">
+                    <p className="font-sans font-bold text-[var(--text-primary)] text-xl mb-4">
                         Rs. {product.price ? product.price.toFixed(2) : '0.00'}
                     </p>
+                    
+                    <button
+                        onClick={handleAddToCart}
+                        className="w-full btn-primary py-3 text-sm"
+                    >
+                        Buy Now
+                    </button>
                 </div>
             </div>
         </motion.div>

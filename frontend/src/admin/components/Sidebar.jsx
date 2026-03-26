@@ -48,7 +48,7 @@ const Sidebar = () => {
                             <li key={item.name} className="px-3">
                                 <Link
                                     to={item.path}
-                                    className={`flex items-center gap-4 px-3 py-3 rounded-none transition-all duration-200 ${isActive ? 'bg-[var(--surface-color)] text-[var(--text-primary)] font-semibold border-l-2 border-[var(--text-primary)]' : 'text-[var(--text-muted)] hover:bg-[var(--surface-color)] hover:text-[var(--text-primary)]'}`}
+                                    className={`flex items-center gap-4 px-3 py-3 rounded-none transition-all duration-200 ${isActive ? 'bg-[var(--surface-color)] text-[var(--color-primary)] font-semibold border-l-2 border-[var(--color-primary)]' : 'text-[var(--text-muted)] hover:bg-[var(--surface-color)] hover:text-[var(--color-primary)]'}`}
                                 >
                                     <div className={`${!isOpen && 'mx-auto'}`}>
                                         {item.icon}

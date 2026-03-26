@@ -10,6 +10,12 @@ const CustomerList = () => {
 
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredCustomers = customers.filter(c => 
+        (c.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+        (c.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     const fetchCustomers = async () => {
         try {
@@ -77,7 +83,7 @@ const CustomerList = () => {
                 <div className="p-4 border-b border-[var(--surface-border)] flex justify-between items-center gap-4">
                     <div className="flex items-center bg-[var(--surface-color)] px-3 py-2 border border-[var(--surface-border)] w-full max-w-md">
                         <Search size={14} className="text-[var(--text-primary)] mr-2" />
-                        <input type="text" placeholder="Search customers by name or email..." className="bg-transparent border-none outline-none text-xs w-full" />
+                        <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search customers by name or email..." className="bg-transparent border-none outline-none text-xs w-full" />
                     </div>
                 </div>
 
@@ -95,9 +101,9 @@ const CustomerList = () => {
                         <tbody className="divide-y divide-[var(--surface-border)]">
                             {loading ? (
                                 <tr><td colSpan="5" className="px-6 py-8 text-center text-[var(--text-primary)] italic">Syncing User Directory...</td></tr>
-                            ) : customers.length === 0 ? (
+                            ) : filteredCustomers.length === 0 ? (
                                 <tr><td colSpan="5" className="px-6 py-8 text-center text-[var(--text-primary)] italic">No customers found.</td></tr>
-                            ) : customers.map((customer) => (
+                            ) : filteredCustomers.map((customer) => (
                                 <tr key={customer._id} className="hover:bg-surface">
                                     <td className="px-6 py-4">
                                         <p className="font-bold text-[var(--text-primary)]">{customer.name}</p>

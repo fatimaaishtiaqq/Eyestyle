@@ -266,18 +266,18 @@ const Auth = () => {
                     {/* Tab Switcher */}
                     <div className="flex border-b border-[var(--surface-border)] mb-6">
                         <button
-                            className={`flex-1 pb-3 text-[11px] font-black tracking-[0.3em] uppercase transition-all relative ${isLogin ? 'text-accent' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                            className={`flex-1 pb-3 text-[11px] font-black tracking-[0.3em] uppercase transition-all relative ${isLogin ? 'text-[var(--color-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
                             onClick={() => { setIsLogin(true); setError(''); setSuccess(''); }}
                         >
                             Sign In
-                            {isLogin && <motion.div layoutId="auth-tab" className="absolute bottom-0 left-0 right-0 h-[2px] bg-accent" />}
+                            {isLogin && <motion.div layoutId="auth-tab" className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--color-primary)]" />}
                         </button>
                         <button
-                            className={`flex-1 pb-3 text-[11px] font-black tracking-[0.3em] uppercase transition-all relative ${!isLogin ? 'text-accent' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
+                            className={`flex-1 pb-3 text-[11px] font-black tracking-[0.3em] uppercase transition-all relative ${!isLogin ? 'text-[var(--color-primary)]' : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'}`}
                             onClick={() => { setIsLogin(false); setError(''); setSuccess(''); }}
                         >
                             Create Account
-                            {!isLogin && <motion.div layoutId="auth-tab" className="absolute bottom-0 left-0 right-0 h-[2px] bg-accent" />}
+                            {!isLogin && <motion.div layoutId="auth-tab" className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--color-primary)]" />}
                         </button>
                     </div>
 
@@ -386,7 +386,7 @@ const Auth = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className={`w-full bg-[var(--text-primary)] text-[var(--bg-color)] py-4 text-[11px] font-black tracking-[0.4em] uppercase transition-colors hover:bg-accent hover:text-white ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            className={`w-full btn-primary py-4 text-[11px] font-black tracking-[0.4em] uppercase transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                             {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Create Account'}
                         </button>

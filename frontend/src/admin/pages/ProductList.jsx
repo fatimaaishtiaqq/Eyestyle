@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Edit, Trash2, Search, Plus, Filter, X } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { API_BASE_URL } from '../../utils/apiClient';
@@ -19,9 +20,22 @@ const ProductList = () => {
     const [subcategories, setSubcategories] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const location = useLocation();
+
     // Filtering State
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchTerm, setSearchTerm] = useState(() => {
+        const params = new URLSearchParams(location.search);
+        return params.get('search') || '';
+    });
     const [filterCategory, setFilterCategory] = useState('');
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const search = params.get('search');
+        if (search !== null) {
+            setSearchTerm(search);
+        }
+    }, [location.search]);
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -371,7 +385,7 @@ const ProductList = () => {
                 </div>
                 <button
                     onClick={openCreateModal}
-                    className="btn-primary text-[var(--bg-color)] px-5 py-2 flex items-center gap-2 uppercase tracking-widest text-xs font-bold hover:bg-black transition-colors"
+                    className="btn-primary text-[var(--bg-color)] px-5 py-2 flex items-center gap-2 uppercase tracking-widest text-xs font-bold transition-colors"
                 >
                     <Plus size={16} /> Add Product
                 </button>
@@ -456,8 +470,8 @@ const ProductList = () => {
                                             </span>
                                         </td>
                                         <td className="px-4 py-4 text-right flex justify-end gap-3">
-                                            <button onClick={() => openEditModal(product)} className="text-[var(--text-primary)] hover:text-[var(--text-primary)]"><Edit size={16} /></button>
-                                            <button onClick={() => handleDelete(product._id)} className="text-[var(--text-primary)] hover:text-[var(--text-primary)]"><Trash2 size={16} /></button>
+                                            <button onClick={() => openEditModal(product)} className="text-[var(--color-primary)] hover:brightness-150 transition-colors"><Edit size={16} /></button>
+                                            <button onClick={() => handleDelete(product._id)} className="text-[var(--color-primary)] hover:brightness-150 transition-colors"><Trash2 size={16} /></button>
                                         </td>
                                     </tr>
                                 );

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Eye, Search, Filter, X, FileText } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { API_BASE_URL } from '../../utils/apiClient';
@@ -16,10 +17,23 @@ const OrderList = () => {
 
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const location = useLocation();
 
     // Tabs for Active vs Completed
-    const [activeTab, setActiveTab] = useState('active'); // active, completed, all
-    const [searchTerm, setSearchTerm] = useState('');
+    const [activeTab, setActiveTab] = useState('all'); // default to all if searching from topbar
+    const [searchTerm, setSearchTerm] = useState(() => {
+        const params = new URLSearchParams(location.search);
+        return params.get('search') || '';
+    });
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const search = params.get('search');
+        if (search !== null) {
+            setSearchTerm(search);
+            setActiveTab('all'); // Ensure we look in all tabs if searching globally
+        }
+    }, [location.search]);
 
     // Modal
     const [selectedOrder, setSelectedOrder] = useState(null);
@@ -202,10 +216,10 @@ const OrderList = () => {
                                         </select>
                                     </td>
                                     <td className="px-6 py-4 text-right flex justify-end gap-3">
-                                        <button onClick={() => openInvoiceModal(order)} className="text-[var(--text-primary)] hover:text-[var(--text-primary)] flex items-center gap-1 text-xs uppercase tracking-widest font-bold mt-1 transition-colors">
+                                        <button onClick={() => openInvoiceModal(order)} className="text-[var(--color-primary)] hover:brightness-110 flex items-center gap-1 text-xs uppercase tracking-widest font-bold mt-1 transition-colors">
                                             <FileText size={14} /> Invoice
                                         </button>
-                                        <button onClick={() => openDetailsModal(order)} className="text-[var(--text-primary)] hover:text-[var(--text-primary)] flex items-center gap-1 text-xs uppercase tracking-widest font-bold mt-1 transition-colors">
+                                        <button onClick={() => openDetailsModal(order)} className="text-[var(--color-primary)] hover:brightness-110 flex items-center gap-1 text-xs uppercase tracking-widest font-bold mt-1 transition-colors">
                                             <Eye size={14} /> View
                                         </button>
                                     </td>
@@ -264,9 +278,9 @@ const OrderList = () => {
                                                 onClick={() => handleUpdateStatus(selectedOrder._id, 'processing')}
                                                 disabled={selectedOrder.status === 'processing' || selectedOrder.status === 'shipped' || selectedOrder.status === 'delivered'}
                                                 className={`w-full border py-2 text-xs font-bold tracking-widest uppercase transition-colors ${selectedOrder.status === 'processing'
-                                                    ? 'bg-black text-white border-[var(--text-primary)] cursor-default'
+                                                    ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] cursor-default'
                                                     : selectedOrder.status === 'pending'
-                                                        ? 'bg-[var(--card-bg)] text-[var(--text-primary)] border-[var(--text-primary)] hover:bg-black hover:text-white'
+                                                        ? 'bg-[var(--card-bg)] text-[var(--text-primary)] border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white'
                                                         : 'bg-[var(--surface-color)] text-[var(--text-primary)] border-[var(--surface-border)] cursor-not-allowed opacity-50'
                                                     }`}
                                             >
@@ -277,9 +291,9 @@ const OrderList = () => {
                                                 onClick={() => handleUpdateStatus(selectedOrder._id, 'shipped')}
                                                 disabled={selectedOrder.status === 'shipped' || selectedOrder.status === 'delivered'}
                                                 className={`w-full border py-2 text-xs font-bold tracking-widest uppercase transition-colors ${selectedOrder.status === 'shipped'
-                                                    ? 'bg-black text-white border-[var(--text-primary)] cursor-default'
+                                                    ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] cursor-default'
                                                     : (selectedOrder.status === 'pending' || selectedOrder.status === 'processing')
-                                                        ? 'bg-[var(--card-bg)] text-[var(--text-primary)] border-[var(--text-primary)] hover:bg-black hover:text-white'
+                                                        ? 'bg-[var(--card-bg)] text-[var(--text-primary)] border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white'
                                                         : 'bg-[var(--surface-color)] text-[var(--text-primary)] border-[var(--surface-border)] cursor-not-allowed opacity-50'
                                                     }`}
                                             >
@@ -290,9 +304,9 @@ const OrderList = () => {
                                                 onClick={() => handleUpdateStatus(selectedOrder._id, 'delivered')}
                                                 disabled={selectedOrder.status === 'delivered'}
                                                 className={`w-full border py-2 text-xs font-bold tracking-widest uppercase transition-colors ${selectedOrder.status === 'delivered'
-                                                    ? 'bg-black text-white border-[var(--text-primary)] cursor-default'
+                                                    ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] cursor-default'
                                                     : (selectedOrder.status === 'pending' || selectedOrder.status === 'processing' || selectedOrder.status === 'shipped')
-                                                        ? 'bg-[var(--card-bg)] text-[var(--text-primary)] border-[var(--text-primary)] hover:bg-black hover:text-white'
+                                                        ? 'bg-[var(--card-bg)] text-[var(--text-primary)] border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white'
                                                         : 'bg-[var(--surface-color)] text-[var(--text-primary)] border-[var(--surface-border)] cursor-not-allowed opacity-50'
                                                     }`}
                                             >
@@ -407,7 +421,7 @@ const OrderList = () => {
 
                             <div className="mt-12 text-center border-t border-[var(--surface-border)] pt-8 print:hidden">
                                 <p className="text-sm text-[var(--text-primary)] italic">Thank you for shopping with EYESTYLE.</p>
-                                <button onClick={() => window.print()} className="mt-6 border border-[var(--text-primary)] px-8 py-3 text-[11px] uppercase tracking-[0.2em] font-bold text-[var(--text-primary)] hover:bg-black hover:text-white transition-colors">
+                                <button onClick={() => window.print()} className="mt-6 border border-[var(--color-primary)] px-8 py-3 text-[11px] uppercase tracking-[0.2em] font-bold text-[var(--text-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors">
                                     Print Receipt
                                 </button>
                             </div>

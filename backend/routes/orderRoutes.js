@@ -134,15 +134,16 @@ router.put('/:id/status', protect, admin, async (req, res) => {
                 const customerPhone = updatedOrder.shippingAddress.phone;
                 let message = `*Order Update from Luxury E-Commerce*\n\n`;
 
+                const shortOrderId = updatedOrder._id.toString().substring(18);
                 if (req.body.status === 'processing') {
-                    message += `Hello! Your order *#${updatedOrder._id}* is now being processed. 📦`;
+                    message += `Hello! Your order *#${shortOrderId}* is now being processed. 📦`;
                 } else if (req.body.status === 'shipped') {
-                    message += `Great news! Your order *#${updatedOrder._id}* has been shipped. 🚚`;
+                    message += `Great news! Your order *#${shortOrderId}* has been shipped. 🚚`;
                     if (req.body.trackingNumber) message += `\nTracking Number: ${req.body.trackingNumber}`;
                 } else if (req.body.status === 'delivered') {
-                    message += `Your order *#${updatedOrder._id}* has been delivered! 🎉 Enjoy your purchase!`;
+                    message += `Your order *#${shortOrderId}* has been delivered! 🎉 Enjoy your purchase!`;
                 } else if (req.body.status === 'cancelled') {
-                    message += `We're sorry to inform you that your order *#${updatedOrder._id}* has been cancelled. 🚫 If you have any questions, please contact our support team.`;
+                    message += `We're sorry to inform you that your order *#${shortOrderId}* has been cancelled. 🚫 If you have any questions, please contact our support team.`;
                 }
 
                 const validStatuses = ['processing', 'shipped', 'delivered', 'cancelled'];

@@ -88,7 +88,7 @@ const OrderHistory = () => {
                         <p className="text-sm text-[var(--text-secondary)] mb-6">You haven't placed any orders yet.</p>
                         <Link
                             to="/collections/all"
-                            className="inline-block bg-[var(--text-primary)] text-[var(--bg-color)] px-8 py-3.5 text-[11px] font-black tracking-[0.3em] uppercase hover:bg-accent hover:text-white transition-colors"
+                            className="btn-primary inline-block px-8 py-3.5 text-[11px] font-black tracking-[0.3em] uppercase"
                         >
                             Start Shopping
                         </Link>
@@ -275,7 +275,7 @@ const OrderHistory = () => {
                                     <p className="text-[11px] text-[var(--text-muted)] tracking-wider">Thank you for shopping with us.</p>
                                     <button
                                         onClick={() => window.print()}
-                                        className="flex items-center gap-2 border border-accent text-accent px-5 py-2.5 text-[11px] font-bold tracking-wider uppercase hover:bg-accent hover:text-white transition-colors"
+                                        className="btn-secondary flex items-center gap-2 px-5 py-2.5 text-[11px] tracking-wider uppercase"
                                     >
                                         <Package size={14} />
                                         Print Invoice

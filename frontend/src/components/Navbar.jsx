@@ -109,7 +109,7 @@ const Navbar = () => {
                 <div className="flex justify-between items-center h-16 w-full relative">
 
                     {/* Mobile Menu Toggle */}
-                    <div className="flex items-center justify-start flex-1 lg:hidden z-20">
+                    <div className="flex items-center justify-start lg:hidden z-20 mr-2 sm:mr-4">
                         <button
                             className="text-[var(--text-primary)] hover:text-[var(--color-electric-blue)] transition-all duration-300 transform active:scale-90 p-1"
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -120,9 +120,9 @@ const Navbar = () => {
                     </div>
 
                     {/* Logo & Desktop Categories */}
-                    <div className="flex items-center justify-center lg:justify-start gap-12 z-10 flex-shrink min-w-0">
+                    <div className="flex items-center justify-start gap-12 z-10 flex-shrink min-w-0">
                         {/* Logo */}
-                        <div className="flex-shrink min-w-0 w-full text-center lg:text-left">
+                        <div className="flex-shrink min-w-0 text-left">
                             <Link to="/" className="inline-flex items-center group px-1 max-w-full">
                                 <span className="text-lg sm:text-2xl font-serif font-bold tracking-widest sm:tracking-[0.2em] text-[var(--text-primary)] transition-all duration-500 group-hover:tracking-[0.2em] sm:group-hover:tracking-[0.3em] uppercase truncate w-full">EYESTYLE</span>
                             </Link>
@@ -180,22 +180,22 @@ const Navbar = () => {
                     </div>
 
                     {/* Icons (Far Right) */}
-                    <div className="flex items-center justify-end gap-1 sm:gap-5 lg:gap-8 flex-1 z-20">
-                        <div className="hidden sm:flex items-center relative">
+                    <div className="flex items-center justify-end gap-2 sm:gap-5 lg:gap-8 flex-1 z-20">
+                        <div className="flex items-center relative">
                             {isSearchOpen ? (
-                                <form onSubmit={handleSearchSubmit} className="flex items-center border-b border-[var(--text-primary)] pb-1 overflow-hidden">
+                                <form onSubmit={handleSearchSubmit} className="flex items-center border-b border-[var(--text-primary)] pb-1 overflow-hidden bg-[var(--bg-color)] absolute right-0 top-1/2 -translate-y-1/2 z-[60] w-[160px] sm:w-[220px]">
                                     <input
                                         type="text"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                         placeholder="SEARCH..."
-                                        className="outline-none bg-transparent text-[var(--text-primary)] placeholder-[var(--text-muted)] text-[10px] tracking-widest w-40 font-sans uppercase"
+                                        className="outline-none bg-transparent text-[var(--text-primary)] placeholder-[var(--text-muted)] text-[10px] tracking-widest w-full font-sans uppercase pl-1"
                                         autoFocus
                                     />
-                                    <button type="submit" className="text-[var(--text-primary)] ml-2 hover:scale-110 transition-transform">
-                                        <Search size={18} strokeWidth={1.5} />
+                                    <button type="submit" className="text-[var(--text-primary)] ml-2 hover:scale-110 transition-transform shrink-0">
+                                        <Search size={16} strokeWidth={1.5} />
                                     </button>
-                                    <button type="button" onClick={() => setIsSearchOpen(false)} className="text-[var(--text-primary)] ml-2 opacity-50 hover:opacity-100">
+                                    <button type="button" onClick={() => setIsSearchOpen(false)} className="text-[var(--text-primary)] ml-3 opacity-50 hover:opacity-100 shrink-0">
                                         <X size={16} />
                                     </button>
                                 </form>
@@ -206,24 +206,24 @@ const Navbar = () => {
                             )}
                         </div>
 
-                        <button onClick={toggleTheme} className="hidden sm:flex text-[var(--text-primary)] hover:rotate-12 transition-all items-center p-1" aria-label="Toggle Theme">
+                        <button onClick={toggleTheme} className="text-[var(--text-primary)] hover:scale-110 transition-all flex items-center p-1" aria-label="Toggle Theme">
                             {theme === 'dark' ? <Sun size={20} strokeWidth={1.5} className="sm:w-[22px] sm:h-[22px]" /> : <Moon size={20} strokeWidth={1.5} className="sm:w-[22px] sm:h-[22px]" />}
                         </button>
-                        <Link to="/account" className="text-[var(--text-primary)] hover:scale-110 transition-all flex items-center p-1 px-1.5 sm:px-1" aria-label="Account">
+                        <Link to="/account" className="text-[var(--text-primary)] hover:scale-110 transition-all flex items-center p-1" aria-label="Account">
                             <User size={20} strokeWidth={1.5} className="sm:w-[22px] sm:h-[22px]" />
                         </Link>
-                        <Link to="/wishlist" className="text-[var(--text-primary)] hover:scale-110 transition-all relative flex items-center p-1 px-1.5 sm:px-1" aria-label="Wishlist">
+                        <Link to="/wishlist" className="text-[var(--text-primary)] hover:scale-110 transition-all relative flex items-center p-1" aria-label="Wishlist">
                             <Heart size={20} strokeWidth={1.5} className="sm:w-[22px] sm:h-[22px]" />
                             {wishlistCount > 0 && (
-                                <span className="absolute -top-1 -right-0.5 sm:-right-1 bg-[var(--color-primary)] text-white text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-sans font-bold shadow-lg">
+                                <span className="absolute -top-1 -right-1 sm:-right-2 bg-[var(--color-primary)] text-white text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-sans font-bold shadow-lg">
                                     {wishlistCount}
                                 </span>
                             )}
                         </Link>
-                        <Link to="/cart" className="text-[var(--text-primary)] hover:scale-110 transition-all relative flex items-center p-1 pl-1.5 pr-0 sm:px-1" aria-label="Cart">
+                        <Link to="/cart" className="text-[var(--text-primary)] hover:scale-110 transition-all relative flex items-center p-1" aria-label="Cart">
                             <ShoppingBag size={20} strokeWidth={1.5} className="sm:w-[22px] sm:h-[22px]" />
                             {cartCount > 0 && (
-                                <span className="absolute -top-1 -right-1 bg-[var(--color-primary)] text-white text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-sans font-bold shadow-lg">
+                                <span className="absolute -top-1 -right-1 sm:-right-2 bg-[var(--color-primary)] text-white text-[8px] w-3.5 h-3.5 rounded-full flex items-center justify-center font-sans font-bold shadow-lg">
                                     {cartCount}
                                 </span>
                             )}

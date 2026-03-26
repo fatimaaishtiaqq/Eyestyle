@@ -10,7 +10,22 @@ import { useGSAP } from '@gsap/react';
 
 gsap.registerPlugin(ScrollTrigger);
 
+const PRICE_RANGES = [
+    { value: '0-1999', label: 'Rs. 0 – Rs. 1,999', min: 0, max: 1999 },
+    { value: '2000-3999', label: 'Rs. 2,000 – Rs. 3,999', min: 2000, max: 3999 },
+    { value: '4000-5999', label: 'Rs. 4,000 – Rs. 5,999', min: 4000, max: 5999 },
+    { value: '6000-7999', label: 'Rs. 6,000 – Rs. 7,999', min: 6000, max: 7999 },
+    { value: '8000-9999', label: 'Rs. 8,000 – Rs. 9,999', min: 8000, max: 9999 },
+    { value: '10000-11999', label: 'Rs. 10,000 – Rs. 11,999', min: 10000, max: 11999 },
+    { value: '12000+', label: 'Rs. 12,000+', min: 12000, max: Infinity },
+];
 
+const checkPriceMatch = (price, rangeValue) => {
+    if (!rangeValue) return true;
+    const range = PRICE_RANGES.find(r => r.value === rangeValue);
+    if (!range) return true;
+    return price >= range.min && price <= range.max;
+};
 
 const Collection = () => {
     const { category } = useParams();
@@ -152,10 +167,7 @@ const Collection = () => {
     const productsForFrameCount = categoryFilteredProducts.filter(p => {
         const matchLens = lensTypes.length === 0 || (p.lensType && lensTypes.includes(p.lensType));
         const matchFabric = fabrics.length === 0 || (p.fabric && fabrics.includes(p.fabric));
-        const matchPrice = !priceRange ||
-            (priceRange === 'under100' ? p.price < 100 :
-                priceRange === '100to300' ? p.price >= 100 && p.price <= 300 :
-                    priceRange === 'over300' ? p.price > 300 : true);
+        const matchPrice = checkPriceMatch(p.price, priceRange);
         return matchLens && matchFabric && matchPrice;
     });
 
@@ -163,10 +175,7 @@ const Collection = () => {
     const productsForLensCount = categoryFilteredProducts.filter(p => {
         const matchFrame = frameShapes.length === 0 || (p.frameShape && frameShapes.includes(p.frameShape));
         const matchFabric = fabrics.length === 0 || (p.fabric && fabrics.includes(p.fabric));
-        const matchPrice = !priceRange ||
-            (priceRange === 'under100' ? p.price < 100 :
-                priceRange === '100to300' ? p.price >= 100 && p.price <= 300 :
-                    priceRange === 'over300' ? p.price > 300 : true);
+        const matchPrice = checkPriceMatch(p.price, priceRange);
         return matchFrame && matchFabric && matchPrice;
     });
 
@@ -174,10 +183,7 @@ const Collection = () => {
     const productsForFabricCount = categoryFilteredProducts.filter(p => {
         const matchFrame = frameShapes.length === 0 || (p.frameShape && frameShapes.includes(p.frameShape));
         const matchLens = lensTypes.length === 0 || (p.lensType && lensTypes.includes(p.lensType));
-        const matchPrice = !priceRange ||
-            (priceRange === 'under100' ? p.price < 100 :
-                priceRange === '100to300' ? p.price >= 100 && p.price <= 300 :
-                    priceRange === 'over300' ? p.price > 300 : true);
+        const matchPrice = checkPriceMatch(p.price, priceRange);
         return matchFrame && matchLens && matchPrice;
     });
 
@@ -227,12 +233,7 @@ const Collection = () => {
         filteredProducts = filteredProducts.filter(p => p.fabric && fabrics.includes(p.fabric));
     }
     if (priceRange) {
-        filteredProducts = filteredProducts.filter(p => {
-            if (priceRange === 'under100') return p.price < 100;
-            if (priceRange === '100to300') return p.price >= 100 && p.price <= 300;
-            if (priceRange === 'over300') return p.price > 300;
-            return true;
-        });
+        filteredProducts = filteredProducts.filter(p => checkPriceMatch(p.price, priceRange));
     }
 
     // Sorting
@@ -296,7 +297,7 @@ const Collection = () => {
                             ))}
                             {priceRange && (
                                 <span className="flex items-center gap-1.5 bg-[var(--color-bg-section)] border border-[var(--surface-border)] text-[var(--text-primary)] px-3 py-1 text-[11px] tracking-wider uppercase font-medium rounded-sm">
-                                    {priceRange === 'under100' ? '< Rs. 100' : priceRange === '100to300' ? 'Rs. 100 - Rs. 300' : '> Rs. 300'}
+                                    {PRICE_RANGES.find(r => r.value === priceRange)?.label || priceRange}
                                     <button onClick={removePriceFilter} className="hover:text-accent transition-colors"><X size={12} /></button>
                                 </span>
                             )}
@@ -335,7 +336,7 @@ const Collection = () => {
                         Showing {filteredProducts.length} results
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-10 lg:gap-x-8 lg:gap-y-12">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 gap-6 products-grid">
                         {filteredProducts.map((product) => (
                             <div key={product._id || product.id}>
                                 <ProductCard product={product} />
@@ -462,11 +463,7 @@ const Collection = () => {
                                 <div>
                                     <h3 className="text-xs font-bold tracking-widest uppercase mb-4 pb-2 border-b border-[var(--surface-border)]">Price Range</h3>
                                     <ul className="space-y-3 text-sm font-medium">
-                                        {[
-                                            { value: 'under100', label: 'Under Rs. 100' },
-                                            { value: '100to300', label: 'Rs. 100 – Rs. 300' },
-                                            { value: 'over300', label: 'Over Rs. 300' },
-                                        ].map(({ value, label }) => (
+                                        {PRICE_RANGES.map(({ value, label }) => (
                                             <li key={value}>
                                                 <label className="flex items-center gap-3 cursor-pointer hover:text-accent transition-colors">
                                                     <input

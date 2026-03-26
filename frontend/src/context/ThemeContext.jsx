@@ -6,7 +6,6 @@ import { getTheme } from '../theme/theme';
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-    // Check localStorage or default to light
     const [mode, setMode] = useState(() => {
         const savedTheme = localStorage.getItem('theme');
         return savedTheme ? savedTheme : 'light';
@@ -27,7 +26,6 @@ export const ThemeProvider = ({ children }) => {
 
     useEffect(() => {
         localStorage.setItem('theme', mode);
-        // We still toggle classes on root just in case any 3rd party relies on it, but MUI handles core UI now
         const root = window.document.documentElement;
         if (mode === 'dark') {
             root.classList.add('dark');
@@ -39,23 +37,44 @@ export const ThemeProvider = ({ children }) => {
     }, [mode]);
 
     const theme = React.useMemo(() => getTheme(mode), [mode]);
+    const isDark = theme.palette.mode === 'dark';
 
-    // Inject our generated MUI palette straight into CSS variables our app expects
+    /* ── CSS variable bridge ──────────────────────────────────────
+       Every CSS variable the app uses is derived from the MUI
+       palette so light ↔ dark stays perfectly in sync.           */
     const globalStyles = {
         ':root': {
+            /* 60 % — backgrounds */
             '--bg-color': theme.palette.background.default,
-            '--card-bg': theme.palette.background.paper,
-            '--surface-color': theme.palette.background.paper,
             '--color-bg-section': theme.palette.background.paper,
-            '--text-primary': theme.palette.text.primary,
-            '--text-secondary': theme.palette.mode === 'dark' ? '#CFCFCF' : '#555555',
-            '--text-body': theme.palette.text.primary,
-            '--text-muted': theme.palette.text.secondary,
-            '--placeholder-color': theme.palette.mode === 'dark' ? '#9CA3AF' : '#777777',
+
+            /* 30 % — surfaces / cards */
+            '--surface-color': theme.palette.background.paper,
+            '--card-bg': theme.palette.background.paper,
+
+            /* 10 % — accent / CTA */
             '--color-primary': theme.palette.primary.main,
+            '--color-primary-hover': theme.palette.primary.dark,
+            '--color-primary-active': theme.palette.primary.light,
+            '--accent': theme.palette.primary.main,
+
+            /* Borders */
             '--surface-border': theme.palette.divider,
+            '--color-border': theme.palette.divider,
+
+            /* Text hierarchy */
+            '--text-primary': theme.palette.text.primary,
+            '--text-secondary': theme.palette.text.secondary,
+            '--text-body': theme.palette.text.primary,
+            '--text-muted': theme.palette.text.disabled,
+            '--placeholder-color': theme.palette.text.disabled,
+
+            /* Legacy aliases (keeps 3rd-party / old components happy) */
             '--color-electric-blue': theme.palette.primary.main,
-        }
+
+            /* Smooth theme transitions */
+            transition: 'background-color 0.3s ease, color 0.3s ease',
+        },
     };
 
     return (

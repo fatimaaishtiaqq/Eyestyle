@@ -272,11 +272,11 @@ const Home = () => {
                             <h2 className="text-[clamp(14px,2vw,18px)] font-sans tracking-[0.5em] font-black uppercase mb-6 text-white/80 border-b-2 md:border-b-0 md:border-l-2 md:pl-4 border-white pb-2 md:pb-0">
                                 {heroSlides[currentSlide].subtitle}
                             </h2>
-                            <h1 className="text-[clamp(32px,6vw,72px)] leading-[1.1] font-serif font-black mb-6 text-white tracking-tighter w-full">
+                            <h1 className="text-[48px] leading-[1.1] font-serif font-bold mb-6 text-white tracking-tighter w-full">
                                 {heroSlides[currentSlide].title.split(' ').slice(0, 2).join(' ')}<br />
                                 <span className="text-outline-white italic">{heroSlides[currentSlide].title.split(' ').slice(2).join(' ')}</span>
                             </h1>
-                            <p className="text-[clamp(14px,2vw,16px)] text-white/70 font-sans leading-relaxed font-light mb-0">
+                            <p className="text-[16px] text-white/70 font-sans leading-relaxed font-light mb-0">
                                 {heroSlides[currentSlide].text}
                             </p>
                             <div className="flex flex-col md:flex-row w-full gap-[12px] md:gap-[20px] mt-[24px]">
@@ -345,7 +345,6 @@ const Home = () => {
                         }
                     `}</style>
                     <div className="max-w-[1600px] mx-auto px-4 md:px-10 mb-20 text-center">
-                        <span className="text-[10px] font-sans tracking-[0.5em] font-black text-[var(--text-muted)] uppercase mb-4 block">CATEGORIES</span>
                         <h3 className="text-5xl md:text-6xl font-serif font-black text-[var(--text-primary)] uppercase tracking-tighter">OUR REFINED<br /><span className="italic font-light">SELECTIONS</span></h3>
                     </div>
 
@@ -387,16 +386,16 @@ const Home = () => {
             )}
 
             {/* New Arrivals - Transparent */}
-            <section className="pt-12 md:pt-16 pb-24 md:pb-32 bg-transparent relative z-10">
-                <div className="max-w-[1600px] mx-auto px-4 md:px-10 flex flex-col items-center text-center mb-20">
-                    <span className="text-[10px] font-sans tracking-[0.5em] font-black text-[var(--text-muted)] uppercase mb-4 block">LATEST DROP</span>
-                    <h3 className="text-5xl md:text-6xl font-serif font-black text-[var(--text-primary)] uppercase tracking-tighter mb-10">THE LATEST<br /><span className="italic font-light">ARRIVALS</span></h3>
-                    <Link to="/collections/all" className="text-[10px] font-sans font-black tracking-[0.4em] uppercase border-2 border-[var(--text-primary)] px-10 py-5 hover:bg-[var(--text-primary)] hover:text-[var(--bg-color)] transition-all">
+            <section className="relative z-10 w-full">
+                <div className="max-w-[1600px] mx-auto px-4 md:px-10 flex flex-col items-center text-center mb-[24px]">
+                    <h2 className="mb-4">THE LATEST <span className="italic font-light">ARRIVALS</span></h2>
+                    <h3 className="mb-[24px] opacity-70 font-light">Explore our newest additions</h3>
+                    <Link to="/collections/all" className="btn-primary flex justify-center items-center text-[10px] font-sans font-black tracking-[0.4em] uppercase px-10 py-5 transition-all mt-2">
                         SEE THE FULL RANGE
                     </Link>
                 </div>
 
-                <div className="max-w-[1600px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-12 px-4 md:px-10">
+                <div className="max-w-[1600px] mx-auto grid grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 gap-6 px-4 md:px-10 products-grid">
                     {trendingProducts.slice(0, 5).map((product) => (
                         <div key={product._id} className="reveal-item">
                             <ProductCard product={product} />
@@ -434,13 +433,13 @@ const Home = () => {
             </section>
 
             {/* Trending Section */}
-            <section className="pt-24 md:pt-32 pb-12 md:pb-16 bg-transparent relative z-10">
-                <div className="max-w-[1600px] mx-auto px-4 md:px-10 text-center mb-20">
-                    <span className="text-[10px] font-sans tracking-[0.5em] font-black text-[var(--text-muted)] uppercase mb-4 block">THE TREND</span>
-                    <h3 className="text-5xl md:text-6xl font-serif font-black text-[var(--text-primary)] uppercase tracking-tighter">OUR MOST<br /><span className="italic font-light">COVETED</span></h3>
+            <section className="relative z-10 w-full mt-16">
+                <div className="max-w-[1600px] mx-auto px-4 md:px-10 text-center mb-[24px]">
+                    <h2 className="mb-4">OUR MOST COVETED</h2>
+                    <h3 className="mb-[24px] opacity-70 font-light">Highly sought after by collectors</h3>
                 </div>
 
-                <div className="max-w-[1600px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-x-12 gap-y-20 px-4 md:px-10">
+                <div className="max-w-[1600px] mx-auto grid grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 gap-6 px-4 md:px-10 products-grid">
                     {trendingProducts.slice(5, 15).map((product) => (
                         <ProductCard key={product._id} product={product} />
                     ))}
@@ -460,7 +459,7 @@ const Home = () => {
                             className="flex-1 bg-transparent border-b-2 border-[var(--text-primary)] py-5 text-sm tracking-widest uppercase font-bold outline-none text-[var(--text-primary)] placeholder-[var(--text-muted)]"
                             required
                         />
-                        <button className="bg-[var(--text-primary)] text-[var(--bg-color)] px-14 py-5 text-[10px] font-black tracking-widest uppercase hover:bg-black hover:text-white transition-all">
+                        <button className="btn-primary px-14 py-5 text-[10px] font-black tracking-widest uppercase transition-all">
                             JOIN NOW
                         </button>
                     </form>

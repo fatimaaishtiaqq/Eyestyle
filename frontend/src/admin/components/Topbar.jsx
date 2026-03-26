@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Search, LogOut, Settings, User } from 'lucide-react';
+import { Bell, LogOut, Settings, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../utils/apiClient';
 
@@ -10,6 +10,7 @@ const Topbar = () => {
 
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isNotifOpen, setIsNotifOpen] = useState(false);
+
 
     const notifRef = useRef(null);
 
@@ -80,17 +81,11 @@ const Topbar = () => {
         navigate('/');
     };
 
+
+
     return (
         <header className="h-16 bg-[var(--bg-color)] border-b border-[var(--surface-border)] flex items-center justify-between px-6 lg:px-10 sticky top-0 z-30">
-            {/* Search (Optional) */}
-            <div className="flex items-center bg-[var(--surface-color)] px-4 py-2 rounded-sm border border-[var(--surface-border)] max-w-sm w-full hidden sm:flex">
-                <Search size={16} className="text-[var(--text-muted)] mr-2" />
-                <input
-                    type="text"
-                    placeholder="Search orders, products..."
-                    className="bg-transparent border-none outline-none text-xs tracking-wider w-full placeholder-gray-500 text-[var(--text-primary)]"
-                />
-            </div>
+
 
             {/* Right Actions */}
             <div className="flex items-center gap-6 ml-auto">
@@ -102,7 +97,7 @@ const Topbar = () => {
                     >
                         <Bell size={20} />
                         {notifications.length > 0 && (
-                            <span className="absolute -top-1 -right-1 bg-[var(--surface-color)] text-[var(--text-primary)] text-[8px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center border border-[var(--surface-border)]">
+                            <span className="absolute -top-1.5 -right-1.5 bg-[var(--color-primary)] text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-[var(--color-primary)] shadow-md">
                                 {notifications.length}
                             </span>
                         )}
@@ -156,7 +151,7 @@ const Topbar = () => {
 
                     {isProfileOpen && (
                         <div className="absolute top-12 right-0 w-48 bg-[var(--bg-color)] border border-[var(--surface-border)] py-2 z-50 rounded-none flex flex-col">
-                            <button className="px-4 py-3 text-xs tracking-widest font-medium uppercase text-[var(--text-muted)] hover:bg-[var(--surface-color)] hover:text-[var(--text-primary)] text-left flex items-center gap-3 transition-colors">
+                            <button onClick={() => navigate('/account')} className="px-4 py-3 text-xs tracking-widest font-medium uppercase text-[var(--text-muted)] hover:bg-[var(--surface-color)] hover:text-[var(--text-primary)] text-left flex items-center gap-3 transition-colors">
                                 <User size={14} /> My Profile
                             </button>
                             <button onClick={() => navigate('/admin/settings')} className="px-4 py-3 text-xs tracking-widest font-medium uppercase text-[var(--text-muted)] hover:bg-[var(--surface-color)] hover:text-[var(--text-primary)] text-left flex items-center gap-3 transition-colors">

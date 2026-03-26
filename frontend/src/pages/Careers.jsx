@@ -27,9 +27,11 @@ const Careers = () => {
                     <div className="pt-8 border-t border-[var(--surface-border)] opacity-80">
                         <p className="text-xs font-black tracking-widest uppercase mb-1 text-[var(--text-primary)]">Current Status</p>
                         <p className="text-sm font-medium mb-4 text-[var(--text-muted)] italic">No open positions at this time</p>
-                        <p className="text-[10px] text-accent font-black uppercase tracking-[0.2em] hover:opacity-70 transition-all cursor-pointer inline-block border-b border-accent pb-1">
-                            Submit resume for future opportunities
-                        </p>
+                        <div className="mt-4">
+                            <span className="btn-primary px-8 py-3.5 inline-block text-[10px] font-black uppercase tracking-[0.2em] cursor-pointer">
+                                Submit resume for future opportunities
+                            </span>
+                        </div>
                     </div>
                 </div>
 

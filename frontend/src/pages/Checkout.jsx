@@ -440,7 +440,7 @@ const Checkout = () => {
                                     <h2 className="text-[11px] font-black tracking-[0.4em] uppercase text-[var(--text-primary)]">Payment Method</h2>
                                 </div>
 
-                                <div className="h-14 flex items-center justify-center border border-accent bg-accent/10 text-[11px] font-bold tracking-wider uppercase text-[var(--text-primary)]">
+                                <div className="h-14 flex items-center justify-center border border-[var(--color-primary)] bg-[var(--color-primary)] text-[11px] font-bold tracking-wider uppercase text-white shadow-md">
                                     Cash on Delivery
                                 </div>
                             </div>
@@ -451,7 +451,7 @@ const Checkout = () => {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="w-full bg-[var(--text-primary)] text-[var(--bg-color)] py-4 text-[11px] font-black tracking-[0.4em] uppercase hover:bg-accent hover:text-white transition-colors disabled:opacity-50"
+                                    className="w-full bg-[var(--color-primary)] text-white py-4 text-[11px] font-black tracking-[0.4em] uppercase hover:bg-[var(--color-primary-hover)] transition-colors disabled:opacity-50 shadow-sm"
                                 >
                                     {isSubmitting ? 'Processing...' : 'Place Order'}
                                 </button>
@@ -534,7 +534,7 @@ const Checkout = () => {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="w-full bg-[var(--text-primary)] text-[var(--bg-color)] py-4 text-[11px] font-black tracking-[0.4em] uppercase hover:bg-accent hover:text-white transition-colors disabled:opacity-50 mb-3"
+                                    className="w-full bg-[var(--color-primary)] text-white py-4 text-[11px] font-black tracking-[0.4em] uppercase hover:bg-[var(--color-primary-hover)] transition-colors disabled:opacity-50 mb-3 shadow-sm"
                                 >
                                     {isSubmitting ? 'Processing...' : 'Place Order'}
                                 </button>

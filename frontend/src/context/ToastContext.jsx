@@ -35,8 +35,7 @@ export const ToastProvider = ({ children }) => {
                             initial={{ opacity: 0, y: 50, scale: 0.9 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
-                            className={`min-w-[300px] shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-between p-4 border border-[var(--surface-border)] ${toast.type === 'success' ? 'bg-[#FF9800] text-white' : 'bg-red-700 text-white'
-                                }`}
+                            className="min-w-[300px] shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-between p-4 border border-[var(--surface-border)] bg-[var(--color-primary)] text-white"
                         >
                             <span className="text-xs uppercase tracking-widest font-medium">
                                 {toast.message}

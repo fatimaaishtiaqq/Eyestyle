@@ -517,8 +517,8 @@ const ProductDetails = () => {
                                                                     type="button"
                                                                     onClick={() => setSelectedVariations(prev => ({ ...prev, [variation.name]: optionValue }))}
                                                                     className={`h-10 px-5 flex items-center justify-center font-black text-[9px] uppercase tracking-[0.2em] transition-all border ${isSelected
-                                                                        ? 'bg-[var(--text-primary)] text-[var(--bg-color)] border-[var(--text-primary)] shadow-sm scale-[1.02]'
-                                                                        : 'bg-transparent text-[var(--text-primary)] border-[var(--text-primary)]/20 hover:border-[var(--text-primary)]/50'
+                                                                        ? 'bg-[var(--color-primary)] text-white border-[var(--color-primary)] shadow-sm scale-[1.02]'
+                                                                        : 'bg-transparent text-[var(--text-primary)] border-[var(--text-primary)]/20 hover:border-[var(--color-primary)]/50'
                                                                         }`}
                                                                 >
                                                                     {optionValue}
@@ -554,18 +554,18 @@ const ProductDetails = () => {
                                         {/* Add to Cart */}
                                         <button
                                             onClick={handleAddToCart}
-                                            className="flex-1 h-16 sm:h-full bg-[var(--text-primary)] text-[var(--bg-color)] text-[11px] sm:text-[10px] font-black tracking-[0.4em] uppercase flex items-center justify-center transition-all hover:bg-accent group relative overflow-hidden"
+                                            className="flex-1 h-16 sm:h-full bg-[var(--color-primary)] text-white text-[11px] sm:text-[10px] font-black tracking-[0.4em] uppercase flex items-center justify-center transition-all hover:bg-[var(--color-primary-hover)] group relative overflow-hidden shadow-sm"
                                         >
                                             <span className="relative z-10">ADD TO CART</span>
-                                            <div className="absolute inset-0 bg-accent translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                                            <div className="absolute inset-0 bg-[#000000]/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
                                         </button>
                                     </div>
                                     <div className="flex gap-4">
                                         <button
                                             onClick={handleToggleWishlist}
                                             className={`flex-1 h-12 border flex items-center justify-center gap-3 transition-all ${isInWishlist(product.id || product._id)
-                                                ? 'border-accent text-accent bg-accent/5'
-                                                : 'border-black/10 hover:border-[var(--text-primary)] text-[var(--text-primary)]'
+                                                ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-[var(--color-primary)]/5'
+                                                : 'border-[var(--surface-border)] hover:border-[var(--color-primary)] text-[var(--text-primary)] hover:text-[var(--color-primary)]'
                                                 }`}
                                         >
                                             <Heart size={12} fill={isInWishlist(product.id || product._id) ? "currentColor" : "none"} />
