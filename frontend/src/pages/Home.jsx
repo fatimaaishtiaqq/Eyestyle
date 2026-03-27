@@ -407,12 +407,12 @@ const Home = () => {
             </section>
 
             {/* Split Banner - More immersive */}
-            <section className="h-[600px] w-full flex flex-col md:flex-row">
-                <Link to="/collections/men" className="relative flex-1 group overflow-hidden border-r border-white/5">
+            <section className="w-full flex flex-col md:flex-row py-[3px] gap-[3px]">
+                <Link to="/collections/men" className="relative flex-1 flex flex-col group overflow-hidden bg-black">
                     <img
                         src="/images/generated/collection_men_new_1772798073357.png"
                         alt="Men"
-                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-105 group-hover:scale-100 parallax-img"
+                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-105 group-hover:scale-100"
                     />
                     <div className="absolute inset-0 bg-black/40 group-hover:bg-black/10 transition-all"></div>
                     <div className="absolute inset-0 flex flex-col items-center justify-center group-hover:scale-110 transition-transform duration-700 p-4">
@@ -420,11 +420,11 @@ const Home = () => {
                         <h3 className="text-5xl md:text-9xl font-serif font-black text-white tracking-widest uppercase text-center">MEN</h3>
                     </div>
                 </Link>
-                <Link to="/collections/women" className="relative flex-1 group overflow-hidden">
+                <Link to="/collections/women" className="relative flex-1 flex flex-col group overflow-hidden bg-black">
                     <img
                         src="/images/generated/collection_women_new_1772798088665.png"
                         alt="Women"
-                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-105 group-hover:scale-100 parallax-img"
+                        className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-105 group-hover:scale-100"
                     />
                     <div className="absolute inset-0 bg-black/40 group-hover:bg-black/10 transition-all"></div>
                     <div className="absolute inset-0 flex flex-col items-center justify-center group-hover:scale-110 transition-transform duration-700 p-4">
@@ -435,7 +435,7 @@ const Home = () => {
             </section>
 
             {/* Trending Section */}
-            <section className="relative z-10 w-full mt-16">
+            <section className="relative z-10 w-full mt-[3px] pb-[3px]">
                 <div className="max-w-[1600px] mx-auto px-4 md:px-10 text-center mb-[24px]">
                     <h2 className="mb-4">OUR MOST COVETED</h2>
                     <h3 className="mb-[24px] opacity-70 font-light">Highly sought after by collectors</h3>
