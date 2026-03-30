@@ -42,7 +42,7 @@ const Checkout = () => {
     const [summaryOpen, setSummaryOpen] = useState(false);
 
     // Selected payment method
-    const [paymentMethod, setPaymentMethod] = useState('Cash on Delivery');
+    const [paymentMethod, setPaymentMethod] = useState('COD cash on delivery');
 
     // Billing address toggle
     const [sameAsShipping, setSameAsShipping] = useState(true);
@@ -473,7 +473,7 @@ const Checkout = () => {
                                 </div>
 
                                 <div className="h-14 flex items-center justify-center border border-[var(--color-primary)] bg-[var(--color-primary)] text-[11px] font-bold tracking-wider uppercase text-white shadow-md">
-                                    Cash on Delivery
+                                    COD cash on delivery
                                 </div>
                             </div>
 

@@ -27,7 +27,6 @@ const AdminDashboard = lazy(() => import('./admin/pages/Dashboard'));
 const ProductList = lazy(() => import('./admin/pages/ProductList'));
 const CategoryList = lazy(() => import('./admin/pages/CategoryList'));
 const OrderList = lazy(() => import('./admin/pages/OrderList'));
-const CustomerList = lazy(() => import('./admin/pages/CustomerList'));
 const Analytics = lazy(() => import('./admin/pages/Analytics'));
 const AdminSettings = lazy(() => import('./admin/pages/Settings'));
 
@@ -65,7 +64,6 @@ function App() {
                         <Route path="products" element={<ProductList />} />
                         <Route path="categories" element={<CategoryList />} />
                         <Route path="orders" element={<OrderList />} />
-                        <Route path="customers" element={<CustomerList />} />
                         <Route path="settings" element={<AdminSettings />} />
                     </Route>
 

@@ -5,7 +5,6 @@ import {
     Package,
     Layers,
     ShoppingCart,
-    Users,
     Settings,
     Bell,
     LogOut,
@@ -23,8 +22,7 @@ const Sidebar = () => {
         { name: 'Analytics', path: '/admin/analytics', icon: <BarChart3 size={20} /> },
         { name: 'Products', path: '/admin/products', icon: <Package size={20} /> },
         { name: 'Categories', path: '/admin/categories', icon: <Layers size={20} /> },
-        { name: 'Orders', path: '/admin/orders', icon: <ShoppingCart size={20} /> },
-        { name: 'Customers', path: '/admin/customers', icon: <Users size={20} /> }
+        { name: 'Orders', path: '/admin/orders', icon: <ShoppingCart size={20} /> }
     ];
 
     const toggleSidebar = () => setIsOpen(!isOpen);

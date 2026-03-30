@@ -61,7 +61,7 @@ router.post('/whatsapp', protect, async (req, res) => {
             orderItems,
             user: req.user._id,
             shippingAddress,
-            paymentMethod: 'WhatsApp',
+            paymentMethod: 'COD cash on delivery',
             itemsPrice,
             taxPrice,
             shippingPrice,

@@ -282,7 +282,7 @@ const OrderList = () => {
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between"><span className="text-[var(--text-primary)]">Status:</span> <span className="font-bold uppercase tracking-wider">{selectedOrder.status}</span></div>
                                     <div className="flex justify-between"><span className="text-[var(--text-primary)]">Date:</span> <span>{new Date(selectedOrder.createdAt).toLocaleString()}</span></div>
-                                    <div className="flex justify-between"><span className="text-[var(--text-primary)]">Payment Method:</span> <span>{selectedOrder.paymentMethod}</span></div>
+                                    <div className="flex justify-between"><span className="text-[var(--text-primary)]">Payment Method:</span> <span className="uppercase">COD cash on delivery</span></div>
                                     <div className="flex justify-between pt-2 border-t border-[var(--surface-border)] mt-2 font-bold mb-4"><span>Total Amount:</span> <span>Rs. {selectedOrder.totalPrice?.toFixed(2)}</span></div>
                                 </div>
 
