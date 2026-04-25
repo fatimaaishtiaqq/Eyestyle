@@ -135,8 +135,8 @@ const Analytics = () => {
                         {/* Revenue Chart */}
                         <div className="bg-[var(--card-bg)] border border-[var(--surface-border)] rounded-none p-6 text-[var(--text-primary)] shadow-sm">
                             <h3 className="text-sm font-bold tracking-widest uppercase text-[var(--text-primary)] mb-6 border-b border-[var(--surface-border)] pb-2">Gross Sales Overview</h3>
-                            <div className="h-72 w-full">
-                                <ResponsiveContainer width="100%" height="100%">
+                            <div className="w-full">
+                                <ResponsiveContainer width="100%" height={300}>
                                     <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="var(--surface-border)" vertical={false} />
                                         <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
@@ -154,8 +154,8 @@ const Analytics = () => {
                         {/* Customers/Orders Chart */}
                         <div className="bg-[var(--card-bg)] border border-[var(--surface-border)] rounded-none p-6 text-[var(--text-primary)] shadow-sm">
                             <h3 className="text-sm font-bold tracking-widest uppercase text-[var(--text-primary)] mb-6 border-b border-[var(--surface-border)] pb-2">Customer Acquisition</h3>
-                            <div className="h-72 w-full">
-                                <ResponsiveContainer width="100%" height="100%">
+                            <div className="w-full">
+                                <ResponsiveContainer width="100%" height={300}>
                                     <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="var(--surface-border)" vertical={false} />
                                         <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
