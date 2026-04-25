@@ -13,10 +13,10 @@ const AdminDashboard = () => {
     const user = storedUser ? JSON.parse(storedUser) : null;
 
     React.useEffect(() => {
-        if (!user || !user.isAdmin) {
+        if (!user || (!user.isAdmin && user.role !== 'superadmin' && user.role !== 'manager')) {
             navigate('/account');
         }
-    }, [user?.isAdmin, navigate]);
+    }, [user, navigate]);
     // Dashboard state
     const [metrics, setMetrics] = useState({
         totalRevenue: 0,
@@ -68,7 +68,7 @@ const AdminDashboard = () => {
         }
     };
 
-    if (!user || !user.isAdmin) return null;
+    if (!user || (!user.isAdmin && user.role !== 'superadmin' && user.role !== 'manager')) return null;
 
     return (
         <div className="w-full pt-6 pb-20 min-h-screen text-[var(--text-primary)]">
