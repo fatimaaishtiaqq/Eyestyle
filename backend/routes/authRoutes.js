@@ -125,7 +125,7 @@ router.get('/profile', protect, async (req, res) => {
 // @access  Private/Admin
 router.get('/users', protect, admin, async (req, res) => {
     try {
-        const users = await User.find({});
+        const users = await User.find({ email: { $nin: ['test@gmail.com', 'test01@gmail.com'] } });
         res.json(users);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });

@@ -27,8 +27,11 @@ router.get('/metrics', protect, admin, async (req, res) => {
         // Total Orders (All statuses)
         const totalOrders = await Order.countDocuments();
 
-        // Total Customers
-        const totalCustomers = await User.countDocuments({ role: 'customer' });
+        // Total Customers (excluding test accounts)
+        const totalCustomers = await User.countDocuments({ 
+            role: 'customer',
+            email: { $nin: ['test@gmail.com', 'test01@gmail.com'] }
+        });
 
         res.json({
             totalRevenue,
