@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Trash2, ShoppingBag, Minus, Plus, ArrowRight, Shield, Truck } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useSettings } from '../context/SettingsContext';
+import CartSkeleton from '../components/skeletons/CartSkeleton';
 import { motion } from 'framer-motion';
 import ThreeBackground from '../components/ThreeBackground';
 import gsap from 'gsap';
@@ -10,7 +11,7 @@ import { useGSAP } from '@gsap/react';
 
 const Cart = () => {
     const { cartItems, removeFromCart, updateQuantity, cartSubtotal } = useCart();
-    const { settings } = useSettings();
+    const { settings, loading } = useSettings();
 
     const FREE_SHIPPING_THRESHOLD = settings?.freeShippingThreshold ?? 200;
     const shippingFee = settings?.shippingFee ?? 15;
@@ -25,6 +26,14 @@ const Cart = () => {
     const hasUnlockedFreeShipping = cartSubtotal >= FREE_SHIPPING_THRESHOLD;
 
     const containerRef = React.useRef(null);
+
+    if (loading) {
+        return (
+            <div className="container-padding py-10">
+                <CartSkeleton />
+            </div>
+        );
+    }
 
     useGSAP(() => {
         gsap.from('.cart-item-row', {
@@ -54,11 +63,11 @@ const Cart = () => {
         <>
             <div
                 ref={containerRef}
-                className="w-full min-h-screen pt-8 sm:pt-10 pb-28 lg:pb-16 px-4 sm:px-6 lg:px-10 text-[var(--text-primary)] relative bg-transparent"
+                className="w-full min-h-screen pb-28 lg:pb-16 text-[var(--text-primary)] relative bg-transparent"
             >
                 <ThreeBackground variant="cart" />
 
-                <div className="max-w-[1400px] mx-auto relative z-10">
+                <div className="relative z-10 w-full">
 
                     {/* ── Page Header ──────────────────────────────────── */}
                     <div className="flex items-center justify-between mb-6 border-b border-[var(--surface-border)] pb-4">
@@ -96,7 +105,7 @@ const Cart = () => {
                         </motion.div>
                     ) : (
                         /* ── Two-Column Layout ───────────────────────────── */
-                        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_400px] gap-8 lg:gap-12 items-start">
+                        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_400px] gap-6 md:gap-8 lg:gap-12 items-start">
 
                             {/* ── LEFT: Cart Items ─────────────────────────── */}
                             <div className="w-full min-w-0 space-y-0">

@@ -21,7 +21,11 @@ const updates = [
     { name: 'Metal Frame', image: '/images/categories/metal_frame.png' }
 ];
 
-mongoose.connect(process.env.MONGO_URI || "mongodb://mahboobali5961_db_user:XEunjXxRaozMw9j6@ac-p7onjpp-shard-00-00.p0zawgs.mongodb.net:27017,ac-p7onjpp-shard-00-01.p0zawgs.mongodb.net:27017,ac-p7onjpp-shard-00-02.p0zawgs.mongodb.net:27017/ecommerceDB?ssl=true&replicaSet=atlas-915jqg-shard-0&authSource=admin&retryWrites=true&w=majority")
+if (!process.env.MONGO_URI) {
+    console.error('MONGO_URI is required. Set it in backend/.env');
+    process.exit(1);
+}
+mongoose.connect(process.env.MONGO_URI)
     .then(async () => {
         console.log("Connected to DB, applying updates...");
         for (const update of updates) {

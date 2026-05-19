@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { API_BASE_URL } from '../utils/apiClient';
 import ThreeBackground from '../components/ThreeBackground';
+import CheckoutSkeleton from '../components/skeletons/CheckoutSkeleton';
 import { ChevronDown, ChevronUp, Shield, Lock, Package } from 'lucide-react';
 
 // Reusable field component for clean DRY forms
@@ -28,8 +29,16 @@ const Field = ({ label, name, type = 'text', value, onChange, required, placehol
 const Checkout = () => {
     const { cartItems, cartTotal, clearCart } = useCart();
     const { showToast } = useToast();
-    const { settings } = useSettings();
+    const { settings, loading } = useSettings();
     const navigate = useNavigate();
+
+    if (loading) {
+        return (
+            <div className="container-padding py-10">
+                <CheckoutSkeleton />
+            </div>
+        );
+    }
 
     // Auth state
     const [currentUser, setCurrentUser] = useState(null);
@@ -106,8 +115,8 @@ const Checkout = () => {
         }
     }, [cartItems.length, navigate, showToast]);
 
-    const handlePlaceOrder = async (e) => {
-        e.preventDefault();
+    const handlePlaceOrder = async (e, source = 'Web') => {
+        if (e) e.preventDefault();
 
         // Gate auth only at submit time
         const stored = localStorage.getItem('lux_user');
@@ -146,19 +155,22 @@ const Checkout = () => {
                 address: shippingDetails.address,
                 city: shippingDetails.city,
                 postalCode: shippingDetails.postalCode,
-                country: shippingDetails.country
+                country: shippingDetails.country,
+                phone: shippingDetails.phone
             },
             billingAddress: finalBilling,
             paymentMethod,
             itemsPrice: cartTotal,
             taxPrice: taxes,
             shippingPrice: shipping,
-            totalPrice: grandTotal
+            totalPrice: grandTotal,
+            orderSource: source
         };
 
         try {
             setIsSubmitting(true);
-            const res = await fetch(`${API_BASE_URL}/api/orders`, {
+            const endpoint = paymentMethod === 'Card' ? '/stripe-checkout' : '';
+            const res = await fetch(`${API_BASE_URL}/api/orders${endpoint}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -168,20 +180,25 @@ const Checkout = () => {
             });
 
             if (res.ok) {
-                clearCart();
-                localStorage.removeItem('checkout_shipping_details');
-                localStorage.removeItem('checkout_billing_details');
-                localStorage.removeItem('checkout_guest_email');
-                showToast('Order placed successfully!', 'success');
-                navigate('/orders');
+                if (paymentMethod === 'Card') {
+                    const data = await res.json();
+                    window.location.href = data.url;
+                } else {
+                    clearCart();
+                    localStorage.removeItem('checkout_shipping_details');
+                    localStorage.removeItem('checkout_billing_details');
+                    localStorage.removeItem('checkout_guest_email');
+                    showToast('Order placed successfully!', 'success');
+                    navigate('/orders');
+                }
             } else {
                 const data = await res.json();
                 showToast(data.message || 'Failed to place order', 'error');
+                setIsSubmitting(false);
             }
         } catch (err) {
             console.error(err);
             showToast('Server error during checkout', 'error');
-        } finally {
             setIsSubmitting(false);
         }
     };
@@ -194,6 +211,11 @@ const Checkout = () => {
     };
 
     const handleWhatsAppOrder = async () => {
+        if (paymentMethod === 'Card') {
+            // If paying by Card, we just want to execute the Stripe flow but label it as a WhatsApp source
+            return handlePlaceOrder(null, 'WhatsApp');
+        }
+
         if (!shippingDetails.firstName || !shippingDetails.address || !shippingDetails.city ||
             !shippingDetails.postalCode || !shippingDetails.country || !shippingDetails.phone) {
             showToast('Please fill in all required shipping fields (including phone) before placing a WhatsApp order.', 'error');
@@ -328,10 +350,10 @@ const Checkout = () => {
     };
 
     return (
-        <div className="w-full min-h-screen pt-8 sm:pt-10 pb-20 px-4 sm:px-6 lg:px-10 text-[var(--text-primary)] relative bg-transparent">
+        <div className="w-full min-h-screen pb-20 text-[var(--text-primary)] relative bg-transparent">
             <ThreeBackground variant="cart" />
 
-            <div className="max-w-[1400px] mx-auto relative z-10">
+            <div className="relative z-10 w-full">
 
                 {/* ── Page Header ─────────────────────────────────────── */}
                 <div className="mb-6 border-b border-[var(--surface-border)] pb-4">
@@ -452,7 +474,7 @@ const Checkout = () => {
                                     <h2 className="text-[11px] font-black tracking-[0.4em] uppercase text-[var(--text-primary)]">Shipping Address</h2>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                                     <Field label="First Name" name="firstName" value={shippingDetails.firstName} onChange={handleShippingChange} required />
                                     <Field label="Last Name" name="lastName" value={shippingDetails.lastName} onChange={handleShippingChange} required />
                                     <div className="md:col-span-2">
@@ -472,8 +494,29 @@ const Checkout = () => {
                                     <h2 className="text-[11px] font-black tracking-[0.4em] uppercase text-[var(--text-primary)]">Payment Method</h2>
                                 </div>
 
-                                <div className="h-14 flex items-center justify-center border border-[var(--color-primary)] bg-[var(--color-primary)] text-[11px] font-bold tracking-wider uppercase text-white shadow-md">
-                                    COD cash on delivery
+                                <div className="flex flex-col sm:flex-row gap-4">
+                                    <button
+                                        type="button"
+                                        onClick={() => setPaymentMethod('COD cash on delivery')}
+                                        className={`flex-1 h-14 flex items-center justify-center border text-[11px] font-bold tracking-wider uppercase transition-colors ${
+                                            paymentMethod === 'COD cash on delivery'
+                                                ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-md'
+                                                : 'bg-transparent border-[var(--surface-border)] text-[var(--text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--text-primary)]'
+                                        }`}
+                                    >
+                                        COD Cash on Delivery
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPaymentMethod('Card')}
+                                        className={`flex-1 h-14 flex items-center justify-center border text-[11px] font-bold tracking-wider uppercase transition-colors ${
+                                            paymentMethod === 'Card'
+                                                ? 'bg-[var(--color-primary)] border-[var(--color-primary)] text-white shadow-md'
+                                                : 'bg-transparent border-[var(--surface-border)] text-[var(--text-secondary)] hover:border-[var(--color-primary)] hover:text-[var(--text-primary)]'
+                                        }`}
+                                    >
+                                        Card Payment (Stripe)
+                                    </button>
                                 </div>
                             </div>
 

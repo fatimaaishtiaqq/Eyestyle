@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Users, Package, DollarSign, LayoutDashboard, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { API_BASE_URL } from '../../utils/apiClient';
+import AdminDashboardSkeleton from '../../components/skeletons/AdminDashboardSkeleton';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -88,8 +89,12 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            {loading ? (
+                <AdminDashboardSkeleton />
+            ) : (
+                <>
+                    {/* Metrics */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                 <div className="bg-[var(--card-bg)] border border-[var(--surface-border)] p-6 flex flex-col justify-between rounded-none">
                     <div className="flex justify-between items-start mb-4">
                         <div className="bg-[var(--surface-color)] p-3 rounded-sm text-[var(--color-electric-blue)]"><DollarSign size={20} /></div>
@@ -181,6 +186,8 @@ const AdminDashboard = () => {
                     </table>
                 </div>
             </div>
+                </>
+            )}
         </div>
     );
 };

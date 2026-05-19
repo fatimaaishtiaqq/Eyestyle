@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '../utils/apiClient';
 import { useToast } from '../context/ToastContext';
 import ThreeBackground from '../components/ThreeBackground';
+import AccountSkeleton from '../components/skeletons/AccountSkeleton';
 
 /* ── Status badge mapping ─────────────────────────────── */
 const statusStyles = {
@@ -56,9 +57,10 @@ const OrderHistory = () => {
 
         fetchMyOrders();
     }, [user?.token, showToast]);
+    const visibleOrders = orders.filter(o => !(o.paymentMethod === 'Card' && o.paymentStatus === 'Pending'));
 
     return (
-        <div className="w-full min-h-screen pt-10 sm:pt-12 pb-20 px-4 sm:px-6 lg:px-10 text-[var(--text-primary)] relative bg-transparent">
+        <div className="w-full min-h-screen pb-20 text-[var(--text-primary)] relative bg-transparent">
             <ThreeBackground variant="auth" />
 
             <div className="max-w-[1200px] mx-auto relative z-10">
@@ -76,13 +78,10 @@ const OrderHistory = () => {
 
                 {/* ── Loading State ─────────────────────────── */}
                 {loading ? (
-                    <div className="border border-[var(--surface-border)] bg-[var(--card-bg)] p-16 flex flex-col items-center justify-center">
-                        <div className="w-10 h-[2px] bg-accent animate-pulse mb-4"></div>
-                        <p className="text-[11px] font-bold tracking-widest uppercase text-[var(--text-muted)]">Loading orders...</p>
-                    </div>
+                    <AccountSkeleton />
 
                     /* ── Empty State ────────────────────────────── */
-                ) : orders.length === 0 ? (
+                ) : visibleOrders.length === 0 ? (
                     <div className="border border-[var(--surface-border)] bg-[var(--card-bg)] p-12 sm:p-16 text-center">
                         <ShoppingBag size={40} className="mx-auto mb-4 text-[var(--text-muted)]" strokeWidth={1.5} />
                         <p className="text-sm text-[var(--text-secondary)] mb-6">You haven't placed any orders yet.</p>
@@ -97,7 +96,7 @@ const OrderHistory = () => {
                     /* ── Orders List ────────────────────────────── */
                 ) : (
                     <div className="space-y-4">
-                        {orders.map(order => {
+                        {visibleOrders.map(order => {
                             const orderDate = new Date(order.createdAt).toLocaleDateString('en-US', {
                                 year: 'numeric', month: 'short', day: 'numeric'
                             });
@@ -209,6 +208,12 @@ const OrderHistory = () => {
                                         <p className="text-[10px] font-bold tracking-widest uppercase text-[var(--text-muted)] mb-1">Order Reference</p>
                                         <p className="text-sm font-bold text-[var(--text-primary)] tracking-wider mb-2">#{selectedOrder._id.toUpperCase()}</p>
                                         <p className="text-[12px] text-[var(--text-secondary)]">{new Date(selectedOrder.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                        <p className="text-[12px] text-[var(--text-secondary)] mt-2">
+                                            <span className="font-bold">Payment:</span> {selectedOrder.paymentMethod || 'COD'} ({selectedOrder.paymentStatus || 'Pending'})
+                                        </p>
+                                        <p className="text-[12px] text-[var(--text-secondary)]">
+                                            <span className="font-bold">Placed Via:</span> {selectedOrder.orderSource || 'Web'}
+                                        </p>
                                     </div>
                                 </div>
 

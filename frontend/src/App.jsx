@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
-import { BrowserRouter as Router, Routes, Route, Outlet } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Outlet, useLocation } from 'react-router-dom';
 import ScrollToTop from './components/ScrollToTop';
+import SessionManager from './components/SessionManager';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 
@@ -21,6 +22,8 @@ const Careers = lazy(() => import('./pages/Careers'));
 const Sustainability = lazy(() => import('./pages/Sustainability'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const PaymentSuccess = lazy(() => import('./pages/PaymentSuccess'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 
 const AdminLayout = lazy(() => import('./admin/layouts/AdminLayout'));
 const AdminDashboard = lazy(() => import('./admin/pages/Dashboard'));
@@ -29,21 +32,26 @@ const CategoryList = lazy(() => import('./admin/pages/CategoryList'));
 const OrderList = lazy(() => import('./admin/pages/OrderList'));
 const Analytics = lazy(() => import('./admin/pages/Analytics'));
 const AdminSettings = lazy(() => import('./admin/pages/Settings'));
+const ReviewsList = lazy(() => import('./admin/pages/ReviewsList'));
 
 /* Layout wrapper for storefront pages — renders Navbar, page content via Outlet, and Footer */
-const StorefrontLayout = () => (
-    <div className="flex flex-col min-h-screen relative">
-        <div className="relative z-[60]">
-            <Navbar />
+const StorefrontLayout = () => {
+    const location = useLocation();
+    const isHome = location.pathname === '/';
+    return (
+        <div className="flex flex-col min-h-screen relative">
+            <div className="relative z-[60]">
+                <Navbar />
+            </div>
+            <main className={`flex-grow pt-[104px] pb-12 w-full relative z-10 ${isHome ? '' : 'container-padding'}`}>
+                <Outlet />
+            </main>
+            <div className="relative z-[60] mt-auto">
+                <Footer />
+            </div>
         </div>
-        <main className="flex-grow pt-[104px] pb-12 w-full container-padding relative z-10">
-            <Outlet />
-        </main>
-        <div className="relative z-[60] mt-auto">
-            <Footer />
-        </div>
-    </div>
-);
+    );
+};
 
 const PageLoader = () => (
     <div className="min-h-screen flex items-center justify-center bg-[var(--bg-color)]" aria-label="Loading">
@@ -53,8 +61,9 @@ const PageLoader = () => (
 
 function App() {
     return (
-        <Router>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
             <ScrollToTop />
+            <SessionManager />
             <Suspense fallback={<PageLoader />}>
                 <Routes>
                     {/* Admin Routes */}
@@ -65,6 +74,7 @@ function App() {
                         <Route path="categories" element={<CategoryList />} />
                         <Route path="orders" element={<OrderList />} />
                         <Route path="settings" element={<AdminSettings />} />
+                        <Route path="reviews" element={<ReviewsList />} />
                     </Route>
 
                     {/* Storefront Routes */}
@@ -85,6 +95,8 @@ function App() {
                         <Route path="sustainability" element={<Sustainability />} />
                         <Route path="privacy" element={<PrivacyPolicy />} />
                         <Route path="terms" element={<TermsOfService />} />
+                        <Route path="payment-success" element={<PaymentSuccess />} />
+                        <Route path="forgot-password" element={<ForgotPassword />} />
                     </Route>
                 </Routes>
             </Suspense>

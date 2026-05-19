@@ -1,9 +1,18 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { API_BASE_URL } from '../utils/apiClient';
+import { recordLogin, performLogout } from '../utils/sessionManager';
 import ThreeBackground from '../components/ThreeBackground';
-import { User, ShoppingBag, Settings, LogOut, Mail, Lock, UserPlus } from 'lucide-react';
+import { User, ShoppingBag, Settings, LogOut, Mail, Lock, UserPlus, Eye, EyeOff, CheckCircle } from 'lucide-react';
+
+const PASSWORD_RULES = [
+    { id: 'length', label: 'At least 8 characters', test: v => v.length >= 8 },
+    { id: 'lower', label: 'One lowercase letter', test: v => /[a-z]/.test(v) },
+    { id: 'upper', label: 'One uppercase letter', test: v => /[A-Z]/.test(v) },
+    { id: 'number', label: 'One number', test: v => /\d/.test(v) },
+    { id: 'special', label: 'One special character', test: v => /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(v) },
+];
 import { auth, googleProvider } from '../config/firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup, updateProfile } from "firebase/auth";
 
@@ -12,6 +21,7 @@ const Auth = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -30,17 +40,17 @@ const Auth = () => {
 
     const from = location.state?.from || '/';
 
-    const syncWithBackend = async (firebaseUser, displayName) => {
+    const syncWithBackend = async (firebaseUser, displayName, authMethod = 'email') => {
         try {
+            const idToken = await firebaseUser.getIdToken();
             const res = await fetch(`${API_BASE_URL}/api/auth/firebase`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    email: firebaseUser.email,
-                    name: displayName || firebaseUser.displayName || 'Firebase User',
-                    uid: firebaseUser.uid
+                    idToken,
+                    authMethod,
                 }),
             });
 
@@ -59,6 +69,7 @@ const Auth = () => {
                     role: data.role,
                     token: data.token,
                 }));
+                recordLogin();
             }
 
             setSuccess(isLogin ? 'Signed in successfully.' : 'Account created successfully.');
@@ -82,7 +93,7 @@ const Auth = () => {
         setLoading(true);
         try {
             const result = await signInWithPopup(auth, googleProvider);
-            await syncWithBackend(result.user, result.user.displayName);
+            await syncWithBackend(result.user, result.user.displayName, 'google');
         } catch (err) {
             setError(err.message);
             setLoading(false);
@@ -104,14 +115,46 @@ const Auth = () => {
             let userCredential;
 
             if (isLogin) {
-                // Firebase Login
-                userCredential = await signInWithEmailAndPassword(auth, email, password);
-                await syncWithBackend(userCredential.user, userCredential.user.displayName);
+                // Try Firebase login first, fall back to MongoDB login if it fails
+                // (needed when password was reset via forgot-password which updates MongoDB only)
+                try {
+                    userCredential = await signInWithEmailAndPassword(auth, email, password);
+                    await syncWithBackend(userCredential.user, userCredential.user.displayName, 'email');
+                } catch (firebaseErr) {
+                    // If Firebase login fails, try direct backend MongoDB login
+                    const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                        throw new Error(data?.message || 'Invalid email or password.');
+                    }
+                    // MongoDB login succeeded — save user data
+                    localStorage.setItem('lux_user', JSON.stringify({
+                        _id: data._id,
+                        name: data.name,
+                        email: data.email,
+                        isAdmin: data.isAdmin,
+                        role: data.role,
+                        token: data.token,
+                    }));
+                    recordLogin();
+                    setSuccess('Signed in successfully.');
+                    setTimeout(() => {
+                        if (data.isAdmin) {
+                            navigate('/admin');
+                        } else {
+                            navigate(from);
+                        }
+                    }, 600);
+                }
             } else {
                 // Firebase Register
                 userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 await updateProfile(userCredential.user, { displayName: name });
-                await syncWithBackend(userCredential.user, name);
+                await syncWithBackend(userCredential.user, name, 'email');
             }
         } catch (err) {
             // Firebase returns specific error codes, make them user friendly
@@ -129,9 +172,8 @@ const Auth = () => {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('lux_user');
         setUser(null);
-        navigate('/');
+        performLogout('manual');
     };
 
     /* ─────────────────────────────────────────────────────────
@@ -139,7 +181,7 @@ const Auth = () => {
     ───────────────────────────────────────────────────────── */
     if (user) {
         return (
-            <div className="w-full min-h-screen pt-10 sm:pt-12 pb-20 px-4 sm:px-6 lg:px-10 text-[var(--text-primary)] relative bg-transparent">
+            <div className="w-full min-h-screen pb-20 text-[var(--text-primary)] relative bg-transparent">
                 <ThreeBackground variant="auth" />
 
                 <div className="max-w-2xl mx-auto relative z-10">
@@ -243,7 +285,7 @@ const Auth = () => {
        LOGGED-OUT VIEW — Sign In / Create Account Form
     ───────────────────────────────────────────────────────── */
     return (
-        <div className="w-full min-h-screen pt-10 sm:pt-12 pb-20 px-4 sm:px-6 lg:px-10 text-[var(--text-primary)] relative bg-transparent">
+        <div className="w-full min-h-screen pb-20 text-[var(--text-primary)] relative bg-transparent">
             <ThreeBackground variant="auth" />
 
             <div className="max-w-lg mx-auto relative z-10">
@@ -326,12 +368,13 @@ const Auth = () => {
                                     Full Name
                                 </label>
                                 <div className="relative">
-                                    <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                                    <User size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
                                     <input
                                         type="text"
                                         id="name"
                                         placeholder="Your full name"
-                                        className="w-full border border-[var(--surface-border)] bg-[var(--surface-color)] pl-11 pr-4 py-3.5 text-sm text-[var(--text-primary)] placeholder-[var(--placeholder-color)] outline-none focus:border-accent transition-colors"
+                                        style={{ paddingLeft: '52px' }}
+                                        className="w-full border border-[var(--surface-border)] bg-[var(--surface-color)] pr-4 py-3.5 text-sm text-[var(--text-primary)] placeholder-[var(--placeholder-color)] outline-none focus:border-accent transition-colors"
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
                                     />
@@ -345,12 +388,13 @@ const Auth = () => {
                                 Email Address
                             </label>
                             <div className="relative">
-                                <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                                <Mail size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
                                 <input
                                     type="email"
                                     id="email"
                                     placeholder="your@email.com"
-                                    className="w-full border border-[var(--surface-border)] bg-[var(--surface-color)] pl-11 pr-4 py-3.5 text-sm text-[var(--text-primary)] placeholder-[var(--placeholder-color)] outline-none focus:border-accent transition-colors"
+                                    style={{ paddingLeft: '52px' }}
+                                    className="w-full border border-[var(--surface-border)] bg-[var(--surface-color)] pr-4 py-3.5 text-sm text-[var(--text-primary)] placeholder-[var(--placeholder-color)] outline-none focus:border-accent transition-colors"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                 />
@@ -364,23 +408,57 @@ const Auth = () => {
                                     Password
                                 </label>
                                 {isLogin && (
-                                    <span className="text-[10px] text-[var(--text-muted)] tracking-wider">
-                                        Demo: admin@example.com / 123456
-                                    </span>
+                                    <Link
+                                        to="/forgot-password"
+                                        className="text-[10px] font-bold tracking-wider text-[var(--color-primary)] hover:underline uppercase"
+                                    >
+                                        Forgot Password?
+                                    </Link>
                                 )}
                             </div>
                             <div className="relative">
-                                <Lock size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                                <Lock size={16} className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
                                 <input
-                                    type="password"
+                                    type={showPassword ? 'text' : 'password'}
                                     id="password"
                                     placeholder="••••••••"
-                                    className="w-full border border-[var(--surface-border)] bg-[var(--surface-color)] pl-11 pr-4 py-3.5 text-sm text-[var(--text-primary)] placeholder-[var(--placeholder-color)] outline-none focus:border-accent transition-colors"
+                                    style={{ paddingLeft: '52px' }}
+                                    className="w-full border border-[var(--surface-border)] bg-[var(--surface-color)] pr-12 py-3.5 text-sm text-[var(--text-primary)] placeholder-[var(--placeholder-color)] outline-none focus:border-accent transition-colors"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                 />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
                             </div>
                         </div>
+
+                        {/* Password Rules — only for registration */}
+                        {!isLogin && password && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5 px-1">
+                                {PASSWORD_RULES.map(r => (
+                                    <div key={r.id} className="flex items-center gap-2">
+                                        <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold ${
+                                            r.test(password)
+                                                ? 'bg-green-500 text-white'
+                                                : 'border border-[var(--surface-border)] text-[var(--text-muted)]'
+                                        }`}>
+                                            {r.test(password) ? '✓' : ''}
+                                        </div>
+                                        <span className={`text-[11px] ${
+                                            r.test(password)
+                                                ? 'text-green-600 dark:text-green-400'
+                                                : 'text-[var(--text-muted)]'
+                                        }`}>{r.label}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
                         {/* Submit Button */}
                         <button

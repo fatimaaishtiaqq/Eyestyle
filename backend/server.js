@@ -1,8 +1,12 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import compression from 'compression';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import connectDB from './config/db.js';
 import { dropLegacyIndexes } from './utils/dropIndexes.js';
+import { protect, admin } from './middleware/authMiddleware.js';
 import productRoutes from './routes/productRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
@@ -11,25 +15,64 @@ import subCategoryRoutes from './routes/subCategoryRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import settingRoutes from './routes/settingRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import forgotPasswordRoutes from './routes/forgotPasswordRoutes.js';
+import reviewRoutes from './routes/reviewRoutes.js';
 import { initializeWhatsApp, isReady, latestQRData } from './utils/whatsappClient.js';
 
 dotenv.config();
 
 const app = express();
 
-// Vercel Serverless Dynamic CORS Configuration
-app.use(cors({
-    origin: function (origin, callback) {
-        // Allow all origins dynamically but reflect the exact requested origin back
-        // This solves Vercel's strict CORS preflight rejections
-        callback(null, origin || true);
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept']
+const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'http://localhost:5176',
+].filter(Boolean);
+
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
-app.use(express.json());
+app.use(compression());
+
+app.use(cors({
+    origin(origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, origin || allowedOrigins[0] || true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
+}));
+
+app.use(express.json({ limit: '100kb' }));
+
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: 'Too many requests, please try again later.' },
+});
+
+const publicLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 120,
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+app.use('/api/', publicLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/firebase', authLimiter);
+app.use('/api/forgot-password', authLimiter);
 
 // Lazy DB connection middleware - connects once per serverless container lifecycle
 let isConnected = false;
@@ -38,10 +81,12 @@ app.use(async (req, res, next) => {
         try {
             await connectDB();
             isConnected = true;
-            // Drop legacy indexes only once after first connection
             dropLegacyIndexes().catch(() => { });
         } catch (err) {
-            return res.status(500).json({ message: 'Database connection failed', error: err.message });
+            return res.status(500).json({
+                message: 'Database connection failed',
+                ...(process.env.NODE_ENV !== 'production' && { error: err.message }),
+            });
         }
     }
     next();
@@ -55,9 +100,19 @@ app.use('/api/subcategories', subCategoryRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/settings', settingRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/forgot-password', forgotPasswordRoutes);
+app.use('/api/reviews', reviewRoutes);
 
-// Helper route to visually display the QR code for easier scanning
-app.get('/api/whatsapp/qr', (req, res) => {
+// WhatsApp admin routes — protected in production
+const whatsappGuard = (req, res, next) => {
+    if (process.env.NODE_ENV !== 'production') {
+        return next();
+    }
+    return protect(req, res, () => admin(req, res, next));
+};
+
+app.get('/api/whatsapp/qr', whatsappGuard, (req, res) => {
     if (isReady) {
         return res.send(`<h2>✅ WhatsApp is already connected and ready!</h2>`);
     }
@@ -77,23 +132,22 @@ app.get('/api/whatsapp/qr', (req, res) => {
     `);
 });
 
-// Diagnostic Endpoints for WhatsApp
-app.get('/api/whatsapp/status', (req, res) => {
-    res.json({ 
+app.get('/api/whatsapp/status', whatsappGuard, (req, res) => {
+    res.json({
         connected: isReady,
         waitingForScan: !!latestQRData,
-        message: isReady ? "WhatsApp is fully connected!" : (latestQRData ? "Waiting for QR scan" : "Initializing browser...")
+        message: isReady ? 'WhatsApp is fully connected!' : (latestQRData ? 'Waiting for QR scan' : 'Initializing browser...'),
     });
 });
 
-app.post('/api/whatsapp/test', async (req, res) => {
+app.post('/api/whatsapp/test', whatsappGuard, async (req, res) => {
     const { phone } = req.body;
     if (!phone) return res.status(400).json({ success: false, message: "Please provide a 'phone' number in the JSON body." });
-    
+
     const { sendWhatsAppMessage } = await import('./utils/whatsappClient.js');
     const success = await sendWhatsAppMessage(phone, "🤖 *EYESTYLE SYSTEM TEST*\n\nHello! If you are seeing this, your WhatsApp Bot is successfully connected and capable of sending messages perfectly!");
-    
-    res.json({ success, message: success ? "Test message sent!" : "Failed to send test message. Check server logs." });
+
+    res.json({ success, message: success ? 'Test message sent!' : 'Failed to send test message. Check server logs.' });
 });
 
 app.get('/', (req, res) => {
@@ -106,9 +160,6 @@ if (process.env.VERCEL !== '1') {
     app.listen(PORT, () => {
         console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 
-        // Initialize the WhatsApp Web Client Bot whenever the server starts.
-        // We explicitly do NOT await connectDB() here because Baileys does not require MongoDB.
-        // Awaiting Mongo here causes a race condition with Render's immediate Health Check pings!
         if (!globalThis.__WHATSAPP_BOT_INITIALIZED__) {
             globalThis.__WHATSAPP_BOT_INITIALIZED__ = true;
             initializeWhatsApp();
@@ -116,5 +167,4 @@ if (process.env.VERCEL !== '1') {
     });
 }
 
-// Export for Vercel Serverless
 export default app;

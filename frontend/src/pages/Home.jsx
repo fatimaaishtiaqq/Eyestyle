@@ -3,6 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ChevronLeft, ChevronRight, ShieldCheck, Truck, Clock, CreditCard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
+import ProductGridSkeleton from '../components/skeletons/ProductGridSkeleton';
+import AppSkeletonTheme from '../components/skeletons/AppSkeletonTheme';
+import Skeleton from 'react-loading-skeleton';
 import { API_BASE_URL, getWithCache } from '../utils/apiClient';
 import ThreeBackground from '../components/ThreeBackground';
 import gsap from 'gsap';
@@ -56,6 +59,8 @@ const resolveImageUrl = (img) => {
 const Home = () => {
     const [currentSlide, setCurrentSlide] = useState(0);
     const [trendingProducts, setTrendingProducts] = useState([]);
+    const [productsLoading, setProductsLoading] = useState(true);
+    const [categoriesLoading, setCategoriesLoading] = useState(true);
     const [categories, setCategories] = useState([]);
 
     const [direction, setDirection] = useState(1); // 1 for right, -1 for left
@@ -140,6 +145,8 @@ const Home = () => {
                 setTrendingProducts(data.products || []);
             } catch (error) {
                 console.error('Failed to fetch trending products:', error);
+            } finally {
+                setProductsLoading(false);
             }
         };
         fetchProducts();
@@ -152,6 +159,8 @@ const Home = () => {
                 setCategories(data.filter(cat => !cat.parent && cat.isActive));
             } catch (error) {
                 console.error('Failed to fetch categories:', error);
+            } finally {
+                setCategoriesLoading(false);
             }
         };
         fetchCategories();
@@ -313,8 +322,23 @@ const Home = () => {
             </section>
 
             {/* Category Section - Transparent to show 3D */}
-            {categories.length > 0 && (
-                <section className="pt-24 md:pt-32 pb-12 md:pb-16 bg-transparent relative z-10">
+            {categoriesLoading ? (
+                <section className="py-12 md:py-16 bg-transparent relative z-10">
+                    <div className="container-padding mb-12 md:mb-16 text-center">
+                        <h3 className="text-3xl sm:text-5xl md:text-6xl font-serif font-black text-[var(--text-primary)] uppercase tracking-tighter">OUR REFINED<br /><span className="italic font-light">SELECTIONS</span></h3>
+                    </div>
+                    <AppSkeletonTheme>
+                        <div className="flex w-full overflow-x-auto scrollbar-hide px-4 md:px-10" style={{ gap: 'clamp(16px, 3vw, 32px)' }}>
+                            {Array.from({ length: 4 }).map((_, i) => (
+                                <div key={i} className="shrink-0 aspect-[3/4] w-[85vw] max-w-[400px] md:w-[45vw] lg:w-[30vw] xl:w-[22vw] bg-[var(--surface-color)] border border-[var(--surface-border)] overflow-hidden">
+                                    <Skeleton className="w-full h-full" height="100%" containerClassName="w-full h-full block" />
+                                </div>
+                            ))}
+                        </div>
+                    </AppSkeletonTheme>
+                </section>
+            ) : categories.length > 0 && (
+                <section className="py-12 md:py-16 bg-transparent relative z-10">
                     <style>{`
                         .carousel-card {
                             width: 85vw; /* Mobile: almost full width for emphasis */
@@ -346,7 +370,7 @@ const Home = () => {
                             animation-play-state: paused;
                         }
                     `}</style>
-                    <div className="max-w-[1600px] mx-auto px-4 md:px-10 mb-20 text-center">
+                    <div className="container-padding mb-12 md:mb-16 text-center">
                         <h3 className="text-3xl sm:text-5xl md:text-6xl font-serif font-black text-[var(--text-primary)] uppercase tracking-tighter">OUR REFINED<br /><span className="italic font-light">SELECTIONS</span></h3>
                     </div>
 
@@ -388,21 +412,27 @@ const Home = () => {
             )}
 
             {/* New Arrivals - Transparent */}
-            <section className="relative z-10 w-full">
-                <div className="max-w-[1600px] mx-auto px-4 md:px-10 flex flex-col items-center text-center mb-[24px]">
+            <section className="relative z-10 w-full py-12 md:py-16">
+                <div className="container-padding flex flex-col items-center text-center mb-12 md:mb-16">
                     <h2 className="mb-4">THE LATEST <span className="italic font-light">ARRIVALS</span></h2>
-                    <h3 className="mb-[24px] opacity-70 font-light">Explore our newest additions</h3>
-                    <Link to="/collections/all" className="btn-primary flex justify-center items-center text-[10px] font-sans font-black tracking-[0.4em] uppercase px-10 py-5 transition-all mt-2">
+                    <h3 className="mb-8 opacity-70 font-light">Explore our newest additions</h3>
+                    <Link to="/collections/all" className="btn-primary flex justify-center items-center text-[10px] font-sans font-black tracking-[0.4em] uppercase mt-2">
                         SEE THE FULL RANGE
                     </Link>
                 </div>
 
-                <div className="max-w-[1600px] mx-auto grid grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 gap-[3px] sm:gap-6 px-0 sm:px-6 md:px-10 products-grid">
-                    {trendingProducts.slice(0, 5).map((product) => (
-                        <div key={product._id} className="reveal-item">
-                            <ProductCard product={product} />
+                <div className="container-padding products-grid w-full">
+                    {productsLoading ? (
+                        <ProductGridSkeleton count={4} />
+                    ) : (
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6 w-full">
+                            {trendingProducts.slice(0, 4).map((product) => (
+                                <div key={product._id} className="reveal-item">
+                                    <ProductCard product={product} />
+                                </div>
+                            ))}
                         </div>
-                    ))}
+                    )}
                 </div>
             </section>
 
@@ -435,24 +465,30 @@ const Home = () => {
             </section>
 
             {/* Trending Section */}
-            <section className="relative z-10 w-full mt-[3px] pb-[3px]">
-                <div className="max-w-[1600px] mx-auto px-4 md:px-10 text-center mb-[24px]">
+            <section className="relative z-10 w-full py-12 md:py-16">
+                <div className="container-padding text-center mb-12 md:mb-16">
                     <h2 className="mb-4">OUR MOST COVETED</h2>
-                    <h3 className="mb-[24px] opacity-70 font-light">Highly sought after by collectors</h3>
+                    <h3 className="opacity-70 font-light">Highly sought after by collectors</h3>
                 </div>
 
-                <div className="max-w-[1600px] mx-auto grid grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 gap-[3px] sm:gap-6 px-0 sm:px-6 md:px-10 products-grid">
-                    {trendingProducts.slice(5, 15).map((product) => (
-                        <ProductCard key={product._id} product={product} />
-                    ))}
+                <div className="container-padding products-grid w-full">
+                    {productsLoading ? (
+                        <ProductGridSkeleton count={8} />
+                    ) : (
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6 w-full">
+                            {trendingProducts.slice(4, 12).map((product) => (
+                                <ProductCard key={product._id} product={product} />
+                            ))}
+                        </div>
+                    )}
                 </div>
             </section>
 
             {/* Newsletter - Glassmorphism */}
-            <section className="pt-12 md:pt-16 pb-12 md:pb-16 relative overflow-hidden">
+            <section className="py-12 md:py-16 lg:py-24 relative overflow-hidden">
                 <div className="absolute inset-0 bg-black/10 backdrop-blur-3xl"></div>
-                <div className="max-w-4xl mx-auto relative z-10 px-4 text-center">
-                    <span className="text-[10px] font-sans tracking-[0.5em] font-black mb-10 text-[var(--text-primary)] block">THE NEWSLETTER</span>
+                <div className="container-padding relative z-10 text-center">
+                    <span className="text-[10px] font-sans tracking-[0.5em] font-black mb-8 md:mb-10 text-[var(--text-primary)] block">THE NEWSLETTER</span>
                     <h3 className="text-5xl md:text-6xl font-serif font-black mb-12 uppercase leading-none text-[var(--text-primary)]">GAIN EARLY<br /><span className="italic italic-outline">ACCESS</span></h3>
                     <form className="max-w-2xl mx-auto flex flex-col md:flex-row gap-6">
                         <input

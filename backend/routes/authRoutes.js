@@ -1,7 +1,11 @@
 import express from 'express';
+import crypto from 'crypto';
 import User from '../models/User.js';
 import generateToken from '../utils/generateToken.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
+import { verifyFirebaseIdToken } from '../utils/verifyFirebaseToken.js';
+
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
 
 const router = express.Router();
 
@@ -11,6 +15,10 @@ const router = express.Router();
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
+
+    if (user?.status === 'blocked') {
+        return res.status(403).json({ message: 'Account is blocked. Contact support.' });
+    }
 
     if (user && (await user.matchPassword(password))) {
         const token = generateToken(res, user._id);
@@ -32,6 +40,12 @@ router.post('/login', async (req, res) => {
 // @access  Public
 router.post('/register', async (req, res) => {
     const { name, email, password } = req.body;
+
+    if (!PASSWORD_REGEX.test(password || '')) {
+        return res.status(400).json({
+            message: 'Password must be 8+ characters with upper, lower, number, and special character.',
+        });
+    }
 
     const userExists = await User.findOne({ email });
 
@@ -65,28 +79,36 @@ router.post('/register', async (req, res) => {
 // @route   POST /api/auth/firebase
 // @access  Public
 router.post('/firebase', async (req, res) => {
-    const { email, name, uid } = req.body;
+    const { idToken, authMethod } = req.body;
 
-    if (!email) {
-        return res.status(400).json({ message: 'Email is required from Firebase' });
+    if (!idToken) {
+        return res.status(400).json({ message: 'Firebase ID token is required' });
     }
 
     try {
-        // Find existing user by email
+        const verified = await verifyFirebaseIdToken(idToken);
+        const { email, name, uid } = verified;
+
         let user = await User.findOne({ email });
 
-        // If user does not exist in MongoDB, create them
+        if (user?.status === 'blocked') {
+            return res.status(403).json({ message: 'Account is blocked. Contact support.' });
+        }
+
         if (!user) {
-            // Generate a secure random password since they use Firebase for auth
-            const randomPassword = Math.random().toString(36).slice(-12);
+            const randomPassword = crypto.randomBytes(32).toString('hex');
             user = await User.create({
                 name: name || 'Firebase User',
                 email,
-                password: randomPassword
+                password: randomPassword,
+                authProvider: authMethod === 'google' ? 'firebase' : 'local',
+                firebaseUid: uid,
             });
+        } else if (!user.firebaseUid) {
+            user.firebaseUid = uid;
+            await user.save();
         }
 
-        // Return JWT token identically to existing login/register methods
         const token = generateToken(res, user._id);
         res.status(200).json({
             _id: user._id,
@@ -98,7 +120,7 @@ router.post('/firebase', async (req, res) => {
         });
     } catch (error) {
         console.error('Firebase Auth Sync Error:', error);
-        res.status(500).json({ message: 'Backend Sync Failed' });
+        res.status(500).json({ message: `Backend Sync Failed: ${error.message}` });
     }
 });
 
@@ -125,7 +147,8 @@ router.get('/profile', protect, async (req, res) => {
 // @access  Private/Admin
 router.get('/users', protect, admin, async (req, res) => {
     try {
-        const users = await User.find({ email: { $nin: ['test@gmail.com', 'test01@gmail.com'] } });
+        const users = await User.find({ email: { $nin: ['test@gmail.com', 'test01@gmail.com'] } })
+            .select('-password -resetPasswordOtpHash -resetPasswordOtpExpiresAt -resetPasswordOtpVerified');
         res.json(users);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });

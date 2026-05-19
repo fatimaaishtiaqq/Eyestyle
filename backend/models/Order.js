@@ -20,6 +20,9 @@ const orderSchema = mongoose.Schema({
         phone: { type: String }
     },
     paymentMethod: { type: String, required: true },
+    paymentStatus: { type: String, enum: ['Pending', 'Paid', 'Failed', 'Cancelled'], default: 'Pending' },
+    orderSource: { type: String, enum: ['Web', 'WhatsApp'], default: 'Web' },
+    phoneNumber: { type: String },
     paymentResult: {
         id: { type: String },
         status: { type: String },

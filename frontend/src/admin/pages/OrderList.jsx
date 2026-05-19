@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Eye, Search, Filter, X, FileText } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
+import AdminTableSkeleton from '../../components/skeletons/AdminTableSkeleton';
 import { API_BASE_URL } from '../../utils/apiClient';
 
 const resolveImageUrl = (img) => {
@@ -116,6 +117,10 @@ const OrderList = () => {
     };
 
     const filteredOrders = Array.isArray(orders) ? orders.filter(order => {
+        if (order.paymentMethod === 'Card' && order.paymentStatus === 'Pending') {
+            return false;
+        }
+        
         const orderIdStr = order._id ? String(order._id) : '';
         const matchesSearch = orderIdStr.toLowerCase().includes(searchTerm.toLowerCase()) ||
             (order.user?.name || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -191,8 +196,11 @@ const OrderList = () => {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm whitespace-nowrap">
+                {loading ? (
+                    <AdminTableSkeleton rows={8} cols={6} />
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm whitespace-nowrap">
                         <thead className="bg-[var(--surface-color)] text-xs uppercase tracking-widest text-[var(--text-primary)] border-b border-[var(--surface-border)]">
                             <tr>
                                 <th className="px-6 py-4">Order ID</th>
@@ -204,9 +212,7 @@ const OrderList = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--surface-border)]">
-                            {loading ? (
-                                <tr><td colSpan="6" className="px-6 py-8 text-center text-[var(--text-primary)] italic">Syncing Orders...</td></tr>
-                            ) : filteredOrders.length === 0 ? (
+                            {filteredOrders.length === 0 ? (
                                 <tr><td colSpan="6" className="px-6 py-8 text-center text-[var(--text-primary)] italic">No {activeTab !== 'all' ? activeTab : ''} orders found.</td></tr>
                             ) : filteredOrders.map((order) => (
                                 <tr key={order._id || Math.random()} className="hover:bg-surface">
@@ -243,7 +249,8 @@ const OrderList = () => {
                             ))}
                         </tbody>
                     </table>
-                </div>
+                    </div>
+                )}
             </div>
 
             {/* Order Details Modal */}
@@ -272,7 +279,8 @@ const OrderList = () => {
                                     <p className="text-sm text-[var(--text-primary)]">
                                         {selectedOrder.shippingAddress?.address}<br />
                                         {selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.postalCode}<br />
-                                        {selectedOrder.shippingAddress?.country}
+                                        {selectedOrder.shippingAddress?.country}<br />
+                                        <span className="font-bold mt-1 inline-block">Phone: {selectedOrder.phoneNumber || selectedOrder.shippingAddress?.phone || 'N/A'}</span>
                                     </p>
                                 </div>
                             </div>
@@ -282,7 +290,9 @@ const OrderList = () => {
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between"><span className="text-[var(--text-primary)]">Status:</span> <span className="font-bold uppercase tracking-wider">{selectedOrder.status}</span></div>
                                     <div className="flex justify-between"><span className="text-[var(--text-primary)]">Date:</span> <span>{new Date(selectedOrder.createdAt).toLocaleString()}</span></div>
-                                    <div className="flex justify-between"><span className="text-[var(--text-primary)]">Payment Method:</span> <span className="uppercase">COD cash on delivery</span></div>
+                                    <div className="flex justify-between"><span className="text-[var(--text-primary)]">Order Placed Via:</span> <span className="uppercase font-medium">{selectedOrder.orderSource || 'Web'}</span></div>
+                                    <div className="flex justify-between"><span className="text-[var(--text-primary)]">Payment Method:</span> <span className="uppercase font-medium">{selectedOrder.paymentMethod || 'COD'}</span></div>
+                                    <div className="flex justify-between"><span className="text-[var(--text-primary)]">Payment Status:</span> <span className={`uppercase font-bold tracking-wider ${selectedOrder.paymentStatus === 'Paid' ? 'text-green-500' : selectedOrder.paymentStatus === 'Failed' ? 'text-red-500' : 'text-orange-500'}`}>{selectedOrder.paymentStatus || 'Pending'}</span></div>
                                     <div className="flex justify-between pt-2 border-t border-[var(--surface-border)] mt-2 font-bold mb-4"><span>Total Amount:</span> <span>Rs. {selectedOrder.totalPrice?.toFixed(2)}</span></div>
                                 </div>
 
@@ -384,15 +394,23 @@ const OrderList = () => {
                                 </div>
                             </div>
 
-                            <div className="mb-8 border-b border-[var(--surface-border)] pb-6">
-                                <h4 className="text-sm font-bold uppercase tracking-widest text-[var(--text-primary)] mb-3">Bill To:</h4>
-                                <p className="text-sm text-[var(--text-primary)] font-medium">{selectedOrder.user?.name || 'Guest'}</p>
-                                <p className="text-sm text-[var(--text-primary)]">{selectedOrder.user?.email || 'N/A'}</p>
-                                <p className="text-sm text-[var(--text-primary)] mt-2">
-                                    {selectedOrder.shippingAddress?.address}<br />
-                                    {selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.postalCode}<br />
-                                    {selectedOrder.shippingAddress?.country}
-                                </p>
+                            <div className="flex justify-between mb-8 border-b border-[var(--surface-border)] pb-6">
+                                <div>
+                                    <h4 className="text-sm font-bold uppercase tracking-widest text-[var(--text-primary)] mb-3">Bill To:</h4>
+                                    <p className="text-sm text-[var(--text-primary)] font-medium">{selectedOrder.user?.name || 'Guest'}</p>
+                                    <p className="text-sm text-[var(--text-primary)]">{selectedOrder.user?.email || 'N/A'}</p>
+                                    <p className="text-sm text-[var(--text-primary)] mt-2">
+                                        {selectedOrder.shippingAddress?.address}<br />
+                                        {selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.postalCode}<br />
+                                        {selectedOrder.shippingAddress?.country}<br />
+                                        <span className="font-bold inline-block mt-1">Phone: {selectedOrder.phoneNumber || selectedOrder.shippingAddress?.phone || 'N/A'}</span>
+                                    </p>
+                                </div>
+                                <div className="text-right text-sm space-y-1">
+                                    <p><span className="font-bold uppercase tracking-wider text-[var(--text-secondary)]">Payment Method:</span> {selectedOrder.paymentMethod || 'COD'}</p>
+                                    <p><span className="font-bold uppercase tracking-wider text-[var(--text-secondary)]">Payment Status:</span> <span className={selectedOrder.paymentStatus === 'Paid' ? 'text-green-500 font-bold' : ''}>{selectedOrder.paymentStatus || 'Pending'}</span></p>
+                                    <p><span className="font-bold uppercase tracking-wider text-[var(--text-secondary)]">Order Source:</span> {selectedOrder.orderSource || 'Web'}</p>
+                                </div>
                             </div>
 
                             <table className="w-full text-sm mb-8">

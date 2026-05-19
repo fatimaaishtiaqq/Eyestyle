@@ -2,6 +2,9 @@ import express from 'express';
 import mongoose from 'mongoose';
 import Product from '../models/Product.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
+import RestockNotification from '../models/RestockNotification.js';
+import { sendRestockNotification } from '../utils/emailService.js';
+import { escapeRegex } from '../utils/security.js';
 
 const router = express.Router();
 
@@ -18,7 +21,7 @@ router.get('/', async (req, res) => {
         // Filtering logic
         const keyword = req.query.keyword ? {
             name: {
-                $regex: req.query.keyword,
+                $regex: escapeRegex(req.query.keyword),
                 $options: 'i',
             }
         } : {};
@@ -27,8 +30,8 @@ router.get('/', async (req, res) => {
         const category = req.query.category ? { category: req.query.category } : {};
 
         // Frame Shape & Lens Type & Price Filters
-        const frameShapeFilter = req.query.frameShape ? { frameShape: { $regex: req.query.frameShape, $options: 'i' } } : {};
-        const lensTypeFilter = req.query.lensType ? { lensType: { $regex: req.query.lensType, $options: 'i' } } : {};
+        const frameShapeFilter = req.query.frameShape ? { frameShape: { $regex: escapeRegex(req.query.frameShape), $options: 'i' } } : {};
+        const lensTypeFilter = req.query.lensType ? { lensType: { $regex: escapeRegex(req.query.lensType), $options: 'i' } } : {};
         const priceFilter = req.query.price ? { price: { $lt: Number(req.query.price) } } : {};
 
         const combinedFilters = { ...keyword, ...category, ...frameShapeFilter, ...lensTypeFilter, ...priceFilter };
@@ -252,6 +255,8 @@ router.put('/:id', protect, admin, async (req, res) => {
         if (subcategory !== undefined) {
             product.subcategory = subcategory && isValidObjectId(subcategory) ? subcategory : null;
         }
+        
+        const oldCountInStock = product.countInStock;
         product.countInStock = countInStock ?? product.countInStock;
 
         if (variations !== undefined) {
@@ -266,6 +271,23 @@ router.put('/:id', protect, admin, async (req, res) => {
         if (isActive !== undefined) product.isActive = isActive;
 
         const updatedProduct = await product.save();
+
+        // Restock Notification Logic
+        if (oldCountInStock <= 0 && updatedProduct.countInStock > 0) {
+            try {
+                const notifications = await RestockNotification.find({ product: updatedProduct._id, notified: false });
+                
+                for (const notification of notifications) {
+                    await sendRestockNotification(notification.email, updatedProduct);
+                    notification.notified = true;
+                    notification.notifiedAt = Date.now();
+                    await notification.save();
+                }
+            } catch (err) {
+                console.error('[Restock Logic] Failed to process restock notifications:', err);
+            }
+        }
+
         res.json(updatedProduct);
     } catch (error) {
         res.status(500).json({ message: error.message || 'Server Error' });

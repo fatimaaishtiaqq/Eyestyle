@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Edit, Trash2, Search, Plus, Filter, X } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
+import AdminTableSkeleton from '../../components/skeletons/AdminTableSkeleton';
 import { API_BASE_URL } from '../../utils/apiClient';
 
 const resolveImageUrl = (img) => {
@@ -423,8 +424,11 @@ const ProductList = () => {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm whitespace-nowrap">
+                {loading ? (
+                    <AdminTableSkeleton rows={8} cols={8} />
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm whitespace-nowrap">
                         <thead className="bg-[var(--surface-color)] text-xs uppercase tracking-widest text-[var(--text-primary)] border-b border-[var(--surface-border)]">
                             <tr>
                                 <th className="px-4 py-4">ID</th>
@@ -438,9 +442,7 @@ const ProductList = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[var(--surface-border)]">
-                            {loading ? (
-                                <tr><td colSpan="8" className="px-4 py-8 text-center text-[var(--text-primary)] italic">Evaluating Inventory...</td></tr>
-                            ) : filteredProducts.length === 0 ? (
+                            {filteredProducts.length === 0 ? (
                                 <tr><td colSpan="8" className="px-4 py-8 text-center text-[var(--text-primary)] italic">No products found.</td></tr>
                             ) : filteredProducts.map((product) => {
                                 const catId = product.category?._id || product.category;
@@ -478,7 +480,8 @@ const ProductList = () => {
                             })}
                         </tbody>
                     </table>
-                </div>
+                    </div>
+                )}
             </div>
 
             {/* Add/Edit Product Modal */}

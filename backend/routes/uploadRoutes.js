@@ -1,6 +1,7 @@
 import path from 'path';
 import express from 'express';
 import multer from 'multer';
+import { protect } from '../middleware/authMiddleware.js';
 import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import dotenv from 'dotenv';
@@ -54,19 +55,20 @@ function checkFileType(file, cb) {
 
 const upload = multer({
     storage,
+    limits: { fileSize: 5 * 1024 * 1024, files: 5 },
     fileFilter: function (req, file, cb) {
         checkFileType(file, cb);
     },
 });
 
-// @desc    Upload multiple files
+// @desc    Upload multiple files (authenticated users — reviews, admin products)
 // @route   POST /api/upload
-// @access  Public (or Private depending on needs, simple setup for now)
-router.post('/', (req, res, next) => {
+// @access  Private
+router.post('/', protect, (req, res, next) => {
     if (!hasCloudinary) {
         return res.status(503).json({ message: 'Image upload is not configured. Set CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, and CLOUDINARY_API_SECRET.' });
     }
-    upload.array('images', 10)(req, res, (err) => {
+    upload.array('images', 5)(req, res, (err) => {
         if (err) {
             console.error('Upload error:', err);
             return res.status(400).json({ message: err.message || 'Upload failed' });
@@ -95,7 +97,7 @@ router.post('/', (req, res, next) => {
         });
     } catch (err) {
         console.error('Upload handler error:', err);
-        res.status(500).json({ message: 'Upload failed', error: err.message });
+        res.status(500).json({ message: 'Upload failed' });
     }
 });
 

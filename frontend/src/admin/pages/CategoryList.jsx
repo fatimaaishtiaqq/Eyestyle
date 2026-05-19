@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Edit, Trash2, Search, Plus, X } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
+import AdminTableSkeleton from '../../components/skeletons/AdminTableSkeleton';
 import { API_BASE_URL } from '../../utils/apiClient';
 
 const CategoryList = () => {
@@ -219,7 +220,10 @@ const CategoryList = () => {
                         <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Search categories..." className="bg-transparent border-none outline-none text-xs w-full" />
                     </div>
                 </div>
-                <table className="w-full text-left text-sm">
+                {loading ? (
+                    <AdminTableSkeleton rows={6} cols={6} />
+                ) : (
+                    <table className="w-full text-left text-sm">
                     <thead className="bg-[var(--surface-color)] text-xs uppercase tracking-widest text-[var(--text-primary)] border-b border-[var(--surface-border)]">
                         <tr>
                             <th className="px-6 py-4">Image</th>
@@ -231,9 +235,7 @@ const CategoryList = () => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--surface-border)]">
-                        {loading ? (
-                            <tr><td colSpan="5" className="px-6 py-8 text-center text-[var(--text-primary)] italic">Loading categories...</td></tr>
-                        ) : filteredCategories.length === 0 ? (
+                        {filteredCategories.length === 0 ? (
                             <tr><td colSpan="5" className="px-6 py-8 text-center text-[var(--text-primary)] italic">No categories found.</td></tr>
                         ) : filteredCategories.map((cat) => (
                             <tr key={cat._id} className="hover:bg-surface">
@@ -260,6 +262,7 @@ const CategoryList = () => {
                         ))}
                     </tbody>
                 </table>
+                )}
             </div>
 
             {/* Add Category Modal */}

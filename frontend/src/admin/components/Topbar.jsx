@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bell, LogOut, Settings, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../utils/apiClient';
+import { performLogout } from '../../utils/sessionManager';
 
 const Topbar = () => {
     const navigate = useNavigate();
@@ -77,8 +78,7 @@ const Topbar = () => {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('lux_user');
-        navigate('/');
+        performLogout('manual');
     };
 
 

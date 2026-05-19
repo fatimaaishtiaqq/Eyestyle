@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
+import ProductGridSkeleton from '../components/skeletons/ProductGridSkeleton';
 import { Filter, ChevronDown, X } from 'lucide-react';
 import { getWithCache } from '../utils/apiClient';
 import ThreeBackground from '../components/ThreeBackground';
@@ -250,17 +251,17 @@ const Collection = () => {
     const title = searchQuery ? `SEARCH: ${searchQuery}` : (category && category !== 'all' ? `${category.replace(/-/g, ' ').toUpperCase()}'S COLLECTION` : 'ALL COLLECTIONS');
 
     return (
-        <div ref={containerRef} className="w-full flex-col flex mb-20 pt-8 px-0 sm:px-6 lg:px-8 min-h-screen">
+        <div ref={containerRef} className="w-full flex-col flex pb-16 min-h-screen">
             <ThreeBackground variant="collection" />
             <div className="collection-content">
                 {/* Header */}
-                <div className="text-center mb-4 mt-0 pt-0 px-4 sm:px-0">
+                <div className="text-center mb-8 mt-0 pt-0">
                     <h1 className="text-4xl font-serif font-bold tracking-wider mb-2 uppercase text-[var(--text-primary)]">{title}</h1>
                     <p className="opacity-80 font-light max-w-2xl mx-auto text-[var(--text-primary)]">Explore our curated selection of premium eyewear and exquisite frame designs.</p>
                 </div>
 
                 {/* Top Toolbar (Filters Button + Active Chips) */}
-                <div className="flex flex-row items-center justify-between gap-4 mb-6 border-b border-[var(--surface-border)] pb-4 flex-wrap sm:flex-nowrap px-4 sm:px-0">
+                <div className="flex flex-row items-center justify-between gap-4 mb-8 border-b border-[var(--surface-border)] pb-4 flex-wrap sm:flex-nowrap">
 
                     <div className="flex flex-wrap items-center gap-4">
                         <button
@@ -332,19 +333,23 @@ const Collection = () => {
 
                 {/* Product Grid */}
                 <div className="">
-                    <div className="mb-6 text-sm opacity-60 font-medium text-[var(--text-primary)] px-4 sm:px-0">
-                        Showing {filteredProducts.length} results
+                    <div className="mb-6 text-sm opacity-60 font-medium text-[var(--text-primary)]">
+                        {loading ? 'Searching catalog...' : `Showing ${filteredProducts.length} results`}
                     </div>
 
-                    <div className="grid grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5 gap-[3px] sm:gap-6 products-grid">
-                        {filteredProducts.map((product) => (
-                            <div key={product._id || product.id}>
-                                <ProductCard product={product} />
-                            </div>
-                        ))}
-                    </div>
+                    {loading ? (
+                        <ProductGridSkeleton count={8} />
+                    ) : (
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6 products-grid">
+                            {filteredProducts.map((product) => (
+                                <div key={product._id || product.id}>
+                                    <ProductCard product={product} />
+                                </div>
+                            ))}
+                        </div>
+                    )}
 
-                    {filteredProducts.length === 0 && (
+                    {!loading && filteredProducts.length === 0 && (
                         <div className="text-center py-32 opacity-70 flex flex-col items-center text-[var(--text-primary)]">
                             <Filter size={48} className="mb-4" />
                             <h3 className="text-lg font-medium mb-2">No products found</h3>
