@@ -11,7 +11,8 @@ import {
     Menu,
     X,
     BarChart3,
-    MessageSquare
+    MessageSquare,
+    Percent
 } from 'lucide-react';
 
 const Sidebar = () => {
@@ -24,6 +25,7 @@ const Sidebar = () => {
         { name: 'Products', path: '/admin/products', icon: <Package size={20} /> },
         { name: 'Categories', path: '/admin/categories', icon: <Layers size={20} /> },
         { name: 'Orders', path: '/admin/orders', icon: <ShoppingCart size={20} /> },
+        { name: 'Sales & Discounts', path: '/admin/sales-discounts', icon: <Percent size={20} /> },
         { name: 'Reviews', path: '/admin/reviews', icon: <MessageSquare size={20} /> }
     ];
 

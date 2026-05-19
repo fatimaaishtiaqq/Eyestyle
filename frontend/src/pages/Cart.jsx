@@ -119,7 +119,8 @@ const Cart = () => {
                                 </div>
 
                                 {cartItems.map((item, idx) => {
-                                    const itemTotal = ((item.price || 0) * item.quantity).toFixed(2);
+                                    const itemPrice = item.salePrice != null ? item.salePrice : item.price;
+                                    const itemTotal = ((itemPrice || 0) * item.quantity).toFixed(2);
                                     const itemId = item._id || item.id;
                                     const variations = item.variations || {};
 
@@ -148,9 +149,20 @@ const Cart = () => {
                                                     {item.name}
                                                 </Link>
 
-                                                <p className="text-sm font-semibold text-[var(--text-primary)] mb-1.5">
-                                                    Rs. {(item.price || 0).toFixed(2)}
-                                                </p>
+                                                {item.salePrice ? (
+                                                    <div className="flex items-baseline gap-2 mb-1.5">
+                                                        <span className="text-sm font-bold text-orange-500">
+                                                            Rs. {Number(item.salePrice).toFixed(2)}
+                                                        </span>
+                                                        <span className="text-xs line-through opacity-50">
+                                                            Rs. {Number(item.price).toFixed(2)}
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-sm font-semibold text-[var(--text-primary)] mb-1.5">
+                                                        Rs. {(item.price || 0).toFixed(2)}
+                                                    </p>
+                                                )}
 
                                                 {/* Variation pills */}
                                                 {Object.keys(variations).length > 0 && (

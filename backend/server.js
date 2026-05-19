@@ -18,6 +18,8 @@ import settingRoutes from './routes/settingRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import forgotPasswordRoutes from './routes/forgotPasswordRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
+import saleRoutes from './routes/saleRoutes.js';
+import couponRoutes from './routes/couponRoutes.js';
 import { initializeWhatsApp, isReady, latestQRData } from './utils/whatsappClient.js';
 
 dotenv.config();
@@ -103,6 +105,8 @@ app.use('/api/settings', settingRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/forgot-password', forgotPasswordRoutes);
 app.use('/api/reviews', reviewRoutes);
+app.use('/api/sales', saleRoutes);
+app.use('/api/coupons', couponRoutes);
 
 // WhatsApp admin routes — protected in production
 const whatsappGuard = (req, res, next) => {

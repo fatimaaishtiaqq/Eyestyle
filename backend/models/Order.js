@@ -7,7 +7,12 @@ const orderSchema = mongoose.Schema({
             name: { type: String, required: true },
             qty: { type: Number, required: true },
             image: { type: String, required: true },
-            price: { type: Number, required: true },
+            price: { type: Number, required: true }, // will act as the final price paid for the item
+            originalPrice: { type: Number, required: true, default: 0 },
+            finalPrice: { type: Number, required: true, default: 0 },
+            discountAmount: { type: Number, required: true, default: 0 },
+            appliedSaleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Sale', default: null },
+            appliedCouponCode: { type: String, default: '' },
             product: { type: mongoose.Schema.Types.ObjectId, required: true, ref: 'Product' },
             variations: { type: mongoose.Schema.Types.Mixed, default: {} }
         }
@@ -29,9 +34,11 @@ const orderSchema = mongoose.Schema({
         update_time: { type: String },
         email_address: { type: String },
     },
+    subtotal: { type: Number, required: true, default: 0.0 },
+    discountTotal: { type: Number, required: true, default: 0.0 },
     taxPrice: { type: Number, required: true, default: 0.0 },
     shippingPrice: { type: Number, required: true, default: 0.0 },
-    totalPrice: { type: Number, required: true, default: 0.0 },
+    totalPrice: { type: Number, required: true, default: 0.0 }, // this is the finalTotal
     isPaid: { type: Boolean, required: true, default: false },
     paidAt: { type: Date },
     isDelivered: { type: Boolean, required: true, default: false },
@@ -41,3 +48,4 @@ const orderSchema = mongoose.Schema({
 
 const Order = mongoose.model('Order', orderSchema);
 export default Order;
+

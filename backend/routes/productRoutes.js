@@ -1,6 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import Product from '../models/Product.js';
+import Sale from '../models/Sale.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 import RestockNotification from '../models/RestockNotification.js';
 import { sendRestockNotification } from '../utils/emailService.js';
@@ -9,6 +10,68 @@ import { escapeRegex } from '../utils/security.js';
 const router = express.Router();
 
 const isValidObjectId = (v) => v && mongoose.Types.ObjectId.isValid(v) && String(v).length === 24;
+
+const applyActiveSalesToProducts = async (products) => {
+    const isArray = Array.isArray(products);
+    const productList = isArray ? products : [products];
+    
+    // Fetch all active sales
+    const now = new Date();
+    const activeSales = await Sale.find({
+        startDate: { $lte: now },
+        endDate: { $gte: now },
+        status: { $ne: 'cancelled' }
+    }).lean();
+    
+    const decorated = productList.map(product => {
+        const pObj = product.toObject ? product.toObject() : { ...product };
+        const pIdStr = String(pObj._id || pObj.id);
+        
+        // Find applicable sales
+        const applicableSales = activeSales.filter(sale => {
+            if (sale.appliesTo === 'all') return true;
+            if (sale.appliesTo === 'selectedProducts' && Array.isArray(sale.productIds)) {
+                return sale.productIds.some(id => String(id) === pIdStr);
+            }
+            return false;
+        });
+        
+        if (applicableSales.length > 0) {
+            // Select the one with the highest discount
+            let bestSale = null;
+            let bestSalePrice = pObj.price;
+            
+            applicableSales.forEach(sale => {
+                let salePrice = pObj.price;
+                if (sale.discountType === 'percentage') {
+                    salePrice = pObj.price * (1 - sale.discountValue / 100);
+                } else if (sale.discountType === 'fixed') {
+                    salePrice = Math.max(0, pObj.price - sale.discountValue);
+                }
+                
+                if (salePrice < bestSalePrice) {
+                    bestSalePrice = salePrice;
+                    bestSale = sale;
+                }
+            });
+            
+            if (bestSale) {
+                pObj.salePrice = +bestSalePrice.toFixed(2);
+                pObj.activeSale = {
+                    _id: bestSale._id,
+                    name: bestSale.name,
+                    discountType: bestSale.discountType,
+                    discountValue: bestSale.discountValue,
+                    terms: bestSale.terms
+                };
+            }
+        }
+        
+        return pObj;
+    });
+    
+    return isArray ? decorated : decorated[0];
+};
 
 // @desc    Fetch all products
 // @route   GET /api/products
@@ -43,7 +106,8 @@ router.get('/', async (req, res) => {
             .skip(pageSize * (page - 1))
             .lean();
         const normalizedProducts = products.map(p => normalizeProductVariationsForResponse(p));
-        res.json({ products: normalizedProducts, page, pages: Math.ceil(count / pageSize) });
+        const decoratedProducts = await applyActiveSalesToProducts(normalizedProducts);
+        res.json({ products: decoratedProducts, page, pages: Math.ceil(count / pageSize) });
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }
@@ -56,7 +120,8 @@ router.get('/admin', protect, admin, async (req, res) => {
     try {
         const products = await Product.find({}).sort({ createdAt: -1 }).lean();
         const normalizedProducts = products.map(p => normalizeProductVariationsForResponse(p));
-        res.json(normalizedProducts);
+        const decoratedProducts = await applyActiveSalesToProducts(normalizedProducts);
+        res.json(decoratedProducts);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }
@@ -69,7 +134,9 @@ router.get('/:id', async (req, res) => {
     try {
         const product = await Product.findById(req.params.id).lean();
         if (product) {
-            res.json(normalizeProductVariationsForResponse(product));
+            const normalized = normalizeProductVariationsForResponse(product);
+            const decorated = await applyActiveSalesToProducts(normalized);
+            res.json(decorated);
         } else {
             res.status(404).json({ message: 'Product not found' });
         }

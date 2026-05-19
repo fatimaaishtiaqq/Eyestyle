@@ -1,6 +1,8 @@
 import express from 'express';
 import Stripe from 'stripe';
 import Order from '../models/Order.js';
+import Sale from '../models/Sale.js';
+import Coupon from '../models/Coupon.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 import { sendWhatsAppMessage } from '../utils/whatsappClient.js';
 import { sendOrderConfirmation, sendOrderStatusUpdate } from '../utils/emailService.js';
@@ -8,6 +10,58 @@ import { buildPricedOrder } from '../utils/orderPricing.js';
 import { safeErrorMessage } from '../utils/security.js';
 
 const router = express.Router();
+
+const recordPromotionalMetrics = async (order) => {
+    try {
+        const saleDiscounts = {}; // saleId -> { count, discount }
+        
+        for (const item of order.orderItems) {
+            if (item.appliedSaleId) {
+                const saleIdStr = String(item.appliedSaleId);
+                const discount = (item.originalPrice - item.finalPrice) * item.qty;
+                if (!saleDiscounts[saleIdStr]) {
+                    saleDiscounts[saleIdStr] = { count: 0, discount: 0 };
+                }
+                saleDiscounts[saleIdStr].count += 1;
+                saleDiscounts[saleIdStr].discount += discount;
+            }
+        }
+        
+        for (const [saleId, data] of Object.entries(saleDiscounts)) {
+            await Sale.findByIdAndUpdate(saleId, {
+                $inc: {
+                    usageCount: data.count,
+                    revenueGenerated: data.discount
+                }
+            });
+        }
+        
+        const couponCodes = {};
+        for (const item of order.orderItems) {
+            if (item.appliedCouponCode) {
+                const code = String(item.appliedCouponCode).toUpperCase();
+                couponCodes[code] = true;
+            }
+        }
+        
+        const couponCodeList = Object.keys(couponCodes);
+        if (couponCodeList.length > 0) {
+            const totalSaleDiscount = Object.values(saleDiscounts).reduce((sum, d) => sum + d.discount, 0);
+            const couponDiscount = Math.max(0, order.discountTotal - totalSaleDiscount);
+            
+            for (const code of couponCodeList) {
+                await Coupon.findOneAndUpdate({ code }, {
+                    $inc: {
+                        usageCount: 1,
+                        revenueGenerated: couponDiscount
+                    }
+                });
+            }
+        }
+    } catch (err) {
+        console.error('Failed to record promotional metrics:', err);
+    }
+};
 
 let _stripe;
 const getStripe = () => {
@@ -19,7 +73,8 @@ const getStripe = () => {
 
 const createOrderFromBody = async (req, res, extras = {}) => {
     try {
-        const priced = await buildPricedOrder(req.body.orderItems);
+        const promoCode = req.body.promoCode || '';
+        const priced = await buildPricedOrder(req.body.orderItems, promoCode);
         const order = new Order({
             orderItems: priced.orderItems,
             user: req.user._id,
@@ -28,6 +83,8 @@ const createOrderFromBody = async (req, res, extras = {}) => {
             paymentStatus: 'Pending',
             orderSource: extras.orderSource || 'Web',
             phoneNumber: req.body.shippingAddress?.phone || '',
+            subtotal: priced.subtotal,
+            discountTotal: priced.discountTotal,
             taxPrice: priced.taxPrice,
             shippingPrice: priced.shippingPrice,
             totalPrice: priced.totalPrice,
@@ -35,11 +92,17 @@ const createOrderFromBody = async (req, res, extras = {}) => {
         });
 
         const createdOrder = await order.save();
+        
+        // COD orders can increment promotion usage immediately since they don't depend on Stripe callbacks
+        if (order.paymentMethod !== 'Card') {
+            await recordPromotionalMetrics(createdOrder);
+        }
+
         await createdOrder.populate('user', 'name email');
         await sendOrderConfirmation(createdOrder, createdOrder.user?.email, createdOrder.user?.name);
         return createdOrder;
     } catch (err) {
-        const status = err.message?.includes('stock') || err.message?.includes('available') ? 400 : 500;
+        const status = err.message?.includes('stock') || err.message?.includes('available') || err.message?.includes('promo') || err.message?.includes('Promo') || err.message?.includes('coupon') || err.message?.includes('Coupon') || err.message?.includes('Invalid') || err.message?.includes('expired') ? 400 : 500;
         res.status(status).json({ message: err.message || 'Could not create order' });
         return null;
     }
@@ -73,7 +136,8 @@ router.post('/whatsapp', protect, async (req, res) => {
 // @access  Private
 router.post('/stripe-checkout', protect, async (req, res) => {
     try {
-        const priced = await buildPricedOrder(req.body.orderItems);
+        const promoCode = req.body.promoCode || '';
+        const priced = await buildPricedOrder(req.body.orderItems, promoCode);
 
         const order = new Order({
             orderItems: priced.orderItems,
@@ -83,6 +147,8 @@ router.post('/stripe-checkout', protect, async (req, res) => {
             paymentStatus: 'Pending',
             orderSource: req.body.orderSource || 'Web',
             phoneNumber: req.body.shippingAddress?.phone || '',
+            subtotal: priced.subtotal,
+            discountTotal: priced.discountTotal,
             taxPrice: priced.taxPrice,
             shippingPrice: priced.shippingPrice,
             totalPrice: priced.totalPrice,
@@ -139,7 +205,7 @@ router.post('/stripe-checkout', protect, async (req, res) => {
         res.json({ url: session.url });
     } catch (error) {
         console.error('Stripe Error:', error);
-        const status = error.message?.includes('stock') ? 400 : 500;
+        const status = error.message?.includes('stock') || error.message?.includes('promo') || error.message?.includes('Promo') || error.message?.includes('coupon') || error.message?.includes('Coupon') ? 400 : 500;
         res.status(status).json({ message: safeErrorMessage(error, 'Payment gateway error') });
     }
 });
@@ -193,6 +259,10 @@ router.post('/stripe-success', protect, async (req, res) => {
             email_address: session.customer_details?.email || '',
         };
         const updatedOrder = await order.save();
+        
+        // Stripe payment was successful, increment metrics now
+        await recordPromotionalMetrics(updatedOrder);
+
         await updatedOrder.populate('user', 'name email');
         await sendOrderConfirmation(updatedOrder, updatedOrder.user?.email, updatedOrder.user?.name);
         res.json(updatedOrder);

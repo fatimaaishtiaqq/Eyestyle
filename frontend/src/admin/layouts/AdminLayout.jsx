@@ -23,9 +23,9 @@ const AdminLayout = () => {
             <Sidebar />
 
             {/* Main Content Area (offset by sidebar width) */}
-            <div className="flex-1 flex flex-col transition-all duration-300 ml-20 lg:ml-64">
+            <div className="flex-1 min-w-0 flex flex-col transition-all duration-300 ml-20 lg:ml-64">
                 <Topbar />
-                <main className="flex-1 p-6 lg:p-10 overflow-x-hidden">
+                <main className="flex-1 min-w-0 p-6 lg:p-10 overflow-x-hidden">
                     {/* The nested routes (Dashboard, Products, etc.) will render here */}
                     <Outlet />
                 </main>

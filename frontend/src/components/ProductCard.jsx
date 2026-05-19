@@ -71,6 +71,15 @@ const ProductCard = ({ product }) => {
                     />
                 </Link>
 
+                {/* Active Sale Ribbon Badge */}
+                {product.activeSale && (
+                    <div className="absolute top-3 left-3 z-10 bg-orange-600 text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest px-2.5 py-1 shadow-md rounded-[2px]">
+                        {product.activeSale.discountType === 'percentage'
+                            ? `${product.activeSale.discountValue}% OFF`
+                            : 'SALE'}
+                    </div>
+                )}
+
                 <button
                     onClick={handleToggleWishlist}
                     className={`absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-300 shadow-md ${isInWishlist(product.id || product._id) ? 'bg-white text-rose-500' : 'bg-white/90 backdrop-blur-md text-gray-500 hover:bg-white hover:scale-110'}`}
@@ -101,9 +110,20 @@ const ProductCard = ({ product }) => {
 
 
                 <div className="mt-auto pt-1">
-                    <p className="font-sans font-bold text-[var(--text-primary)] text-[14px] sm:text-xl mb-2 sm:mb-3">
-                        Rs. {product.price ? product.price.toFixed(2) : '0.00'}
-                    </p>
+                    {product.salePrice ? (
+                        <div className="flex flex-wrap items-baseline gap-2 mb-2 sm:mb-3">
+                            <span className="font-sans font-bold text-orange-500 text-[14px] sm:text-lg">
+                                Rs. {product.salePrice.toFixed(2)}
+                            </span>
+                            <span className="font-sans text-[11px] sm:text-[13px] line-through opacity-50">
+                                Rs. {product.price.toFixed(2)}
+                            </span>
+                        </div>
+                    ) : (
+                        <p className="font-sans font-bold text-[var(--text-primary)] text-[14px] sm:text-lg mb-2 sm:mb-3">
+                            Rs. {product.price ? product.price.toFixed(2) : '0.00'}
+                        </p>
+                    )}
                     
                     <button
                         onClick={handleAddToCart}

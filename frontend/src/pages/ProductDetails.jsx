@@ -733,9 +733,25 @@ const ProductDetails = () => {
                                     )}
 
                                     <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4 mb-6">
-                                        <p className="text-xl sm:text-2xl font-sans font-black tracking-tight">
-                                            Rs. {product.price ? Number(product.price).toFixed(2) : '0.00'}
-                                        </p>
+                                        {product.salePrice ? (
+                                            <div className="flex flex-wrap items-baseline gap-3">
+                                                <span className="text-2xl sm:text-3xl font-sans font-black tracking-tight text-orange-500">
+                                                    Rs. {Number(product.salePrice).toFixed(2)}
+                                                </span>
+                                                <span className="text-base sm:text-lg text-[var(--text-muted)] line-through opacity-50">
+                                                    Rs. {Number(product.price).toFixed(2)}
+                                                </span>
+                                                <span className="bg-orange-600 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 shadow-md rounded-[2px] ml-2">
+                                                    {product.activeSale.discountType === 'percentage'
+                                                        ? `${product.activeSale.discountValue}% OFF`
+                                                        : 'SALE'}
+                                                </span>
+                                            </div>
+                                        ) : (
+                                            <p className="text-xl sm:text-2xl font-sans font-black tracking-tight">
+                                                Rs. {product.price ? Number(product.price).toFixed(2) : '0.00'}
+                                            </p>
+                                        )}
                                         <span className="w-8 h-[1px] bg-black/10 hidden sm:block"></span>
                                         <span className="text-[9px] tracking-[0.4em] font-black uppercase opacity-20 hidden md:inline">ITEM No. {id.slice(-6).toUpperCase()}</span>
                                     </div>

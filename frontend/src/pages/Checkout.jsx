@@ -87,19 +87,107 @@ const Checkout = () => {
         localStorage.setItem('checkout_billing_details', JSON.stringify(billingDetails));
     }, [billingDetails]);
 
-    useEffect(() => {
-        localStorage.setItem('checkout_guest_email', guestEmail);
-    }, [guestEmail]);
-
+    // Promo / Coupon state
+    const [promoCode, setPromoCode] = useState('');
+    const [appliedPromo, setAppliedPromo] = useState(null);
+    const [promoDiscount, setPromoDiscount] = useState(0);
+    const [promoError, setPromoError] = useState('');
+    const [isValidatingPromo, setIsValidatingPromo] = useState(false);
+    const [promoTaxes, setPromoTaxes] = useState(0);
+    const [promoShipping, setPromoShipping] = useState(0);
+    const [promoGrandTotal, setPromoGrandTotal] = useState(0);
 
     // Pricing logic
     const threshold = settings?.freeShippingThreshold ?? 200;
     const shippingFee = settings?.shippingFee ?? 15;
     const taxRate = settings?.taxRate ?? 10;
     
-    const shipping = cartTotal <= 0 ? 0 : cartTotal >= threshold ? 0 : shippingFee;
-    const taxes = +(cartTotal * (taxRate / 100)).toFixed(2);
-    const grandTotal = +(cartTotal + shipping + taxes).toFixed(2);
+    const shipping = appliedPromo ? promoShipping : (cartTotal <= 0 ? 0 : cartTotal >= threshold ? 0 : shippingFee);
+    const taxes = appliedPromo ? promoTaxes : +(cartTotal * (taxRate / 100)).toFixed(2);
+    const grandTotal = appliedPromo ? promoGrandTotal : +(cartTotal + shipping + taxes).toFixed(2);
+
+    const handleApplyPromo = async (e) => {
+        if (e) e.preventDefault();
+        if (!promoCode.trim()) return;
+
+        setPromoError('');
+        setIsValidatingPromo(true);
+
+        const orderItems = cartItems.map(item => ({
+            name: item.name,
+            qty: item.quantity,
+            image: (Array.isArray(item.images) && item.images[0]) ? item.images[0] : (item.image || '/images/sample.jpg'),
+            price: item.price,
+            product: item.id || item._id,
+            variations: item.variations || {}
+        }));
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/coupons/validate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code: promoCode, orderItems })
+            });
+
+            const data = await res.json();
+            if (res.ok && data.valid) {
+                setAppliedPromo(data.code);
+                setPromoDiscount(data.discountAmount);
+                setPromoTaxes(data.taxPrice);
+                setPromoShipping(data.shippingPrice);
+                setPromoGrandTotal(data.totalPrice);
+                showToast(`Promo code "${data.code}" applied!`, 'success');
+            } else {
+                setPromoError(data.message || 'Invalid promo code');
+                setAppliedPromo(null);
+                setPromoDiscount(0);
+                showToast(data.message || 'Invalid promo code', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            setPromoError('Server error validating promo code');
+            showToast('Server error validating promo code', 'error');
+        } finally {
+            setIsValidatingPromo(false);
+        }
+    };
+
+    // Re-validate coupon dynamically if cart items change
+    useEffect(() => {
+        if (appliedPromo && cartItems.length > 0) {
+            const orderItems = cartItems.map(item => ({
+                name: item.name,
+                qty: item.quantity,
+                image: (Array.isArray(item.images) && item.images[0]) ? item.images[0] : (item.image || '/images/sample.jpg'),
+                price: item.price,
+                product: item.id || item._id,
+                variations: item.variations || {}
+            }));
+
+            fetch(`${API_BASE_URL}/api/coupons/validate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: appliedPromo, orderItems })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.valid) {
+                    setPromoDiscount(data.discountAmount);
+                    setPromoTaxes(data.taxPrice);
+                    setPromoShipping(data.shippingPrice);
+                    setPromoGrandTotal(data.totalPrice);
+                } else {
+                    setAppliedPromo(null);
+                    setPromoDiscount(0);
+                    setPromoCode('');
+                    showToast('Applied promo code is no longer valid for your cart', 'info');
+                }
+            })
+            .catch(() => {});
+        }
+    }, [cartItems, appliedPromo]);
 
     const handleShippingChange = (e) =>
         setShippingDetails({ ...shippingDetails, [e.target.name]: e.target.value });
@@ -164,7 +252,8 @@ const Checkout = () => {
             taxPrice: taxes,
             shippingPrice: shipping,
             totalPrice: grandTotal,
-            orderSource: source
+            orderSource: source,
+            promoCode: appliedPromo || ''
         };
 
         try {
@@ -249,7 +338,7 @@ const Checkout = () => {
             city: shippingDetails.city,
             postalCode: shippingDetails.postalCode,
             country: shippingDetails.country,
-            phone: shippingDetails.phone // Add phone to billing just in case
+            phone: shippingDetails.phone
         } : billingDetails;
 
         const orderData = {
@@ -259,13 +348,14 @@ const Checkout = () => {
                 city: shippingDetails.city,
                 postalCode: shippingDetails.postalCode,
                 country: shippingDetails.country,
-                phone: shippingDetails.phone // Include phone for backend to use for notifications
+                phone: shippingDetails.phone
             },
             billingAddress: finalBilling,
             itemsPrice: cartTotal,
             taxPrice: taxes,
             shippingPrice: shipping,
-            totalPrice: grandTotal
+            totalPrice: grandTotal,
+            promoCode: appliedPromo || ''
         };
 
         let orderId = 'PENDING';
@@ -288,7 +378,6 @@ const Checkout = () => {
                 localStorage.removeItem('checkout_shipping_details');
                 localStorage.removeItem('checkout_billing_details');
                 localStorage.removeItem('checkout_guest_email');
-                // We'll let the whatsapp opening happen below, then redirect to orders
             } else {
                 const data = await res.json();
                 showToast(data.message || 'Failed to initialize WhatsApp order', 'error');
@@ -319,7 +408,8 @@ const Checkout = () => {
 
         message += `🛍️ *ＯＲＤＥＲ ＩＴＥＭＳ*\n\n`;
         cartItems.forEach((item, index) => {
-            const itemPrice = ((item.price || 0) * item.quantity).toFixed(2);
+            const resolvedPrice = item.salePrice != null ? item.salePrice : item.price;
+            const itemPrice = ((resolvedPrice || 0) * item.quantity).toFixed(2);
 
             message += `*${index + 1}. ${item.name}*\n`;
             message += `▸ Qty: ${item.quantity}  |  Price: Rs. ${itemPrice}\n`;
@@ -332,6 +422,9 @@ const Checkout = () => {
         message += `───────────────────────\n\n`;
         message += `💰 *ＯＲＤＥＲ ＳＵＭＭＡＲＹ*\n`;
         message += `▸ Subtotal: Rs. ${cartTotal.toFixed(2)}\n`;
+        if (promoDiscount > 0) {
+            message += `▸ Promo Discount (${appliedPromo}): -Rs. ${promoDiscount.toFixed(2)}\n`;
+        }
         message += `▸ Shipping: ${shipping === 0 && cartTotal > 0 ? 'Free' : `Rs. ${shipping.toFixed(2)}`}\n`;
         message += `▸ Taxes: Rs. ${taxes.toFixed(2)}\n`;
         message += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
@@ -384,24 +477,85 @@ const Checkout = () => {
 
                     {summaryOpen && (
                         <div className="border-t border-[var(--surface-border)] px-4 py-4 space-y-3">
-                            {cartItems.map((item, idx) => (
-                                <div key={idx} className="flex items-center gap-3">
-                                    <div className="w-12 h-14 shrink-0 bg-[var(--surface-color)] border border-[var(--surface-border)] overflow-hidden">
-                                        <img src={resolveImage(item.image)} alt={item.name} className="w-full h-full object-cover" />
+                            {cartItems.map((item, idx) => {
+                                const itemUnitPrice = item.salePrice != null ? item.salePrice : item.price;
+                                return (
+                                    <div key={idx} className="flex items-center gap-3">
+                                        <div className="w-12 h-14 shrink-0 bg-[var(--surface-color)] border border-[var(--surface-border)] overflow-hidden">
+                                            <img src={resolveImage(item.image)} alt={item.name} className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[13px] font-semibold text-[var(--text-primary)] truncate">{item.name}</p>
+                                            <p className="text-[11px] text-[var(--text-secondary)]">Qty: {item.quantity}</p>
+                                        </div>
+                                        <p className="text-sm font-bold text-[var(--text-primary)] shrink-0">
+                                            Rs. {((itemUnitPrice || 0) * item.quantity).toFixed(2)}
+                                        </p>
                                     </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-[13px] font-semibold text-[var(--text-primary)] truncate">{item.name}</p>
-                                        <p className="text-[11px] text-[var(--text-secondary)]">Qty: {item.quantity}</p>
+                                );
+                            })}
+
+                            {/* Mobile Promo Code Component */}
+                            <div className="border-t border-[var(--surface-border)] pt-3">
+                                <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--text-secondary)] mb-2">
+                                    Have a Promo Code?
+                                </h3>
+                                {appliedPromo ? (
+                                    <div className="flex items-center justify-between bg-green-500/10 border border-green-500/20 px-3 py-2 rounded-[2px]">
+                                        <div>
+                                            <span className="text-xs font-black text-green-600 dark:text-green-400 tracking-wider">
+                                                {appliedPromo}
+                                            </span>
+                                            <p className="text-[10px] text-green-600/80 dark:text-green-400/80">
+                                                Rs. {promoDiscount.toFixed(2)} discount applied
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setAppliedPromo(null);
+                                                setPromoDiscount(0);
+                                                setPromoCode('');
+                                                showToast('Promo code removed', 'info');
+                                            }}
+                                            className="text-[10px] font-bold text-red-500 hover:underline tracking-widest uppercase"
+                                        >
+                                            Remove
+                                        </button>
                                     </div>
-                                    <p className="text-sm font-bold text-[var(--text-primary)] shrink-0">
-                                        Rs. {((item.price || 0) * item.quantity).toFixed(2)}
-                                    </p>
-                                </div>
-                            ))}
+                                ) : (
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            placeholder="ENTER CODE"
+                                            value={promoCode}
+                                            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                                            className="flex-1 bg-[var(--surface-color)] border border-[var(--surface-border)] px-3 py-2 text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider outline-none focus:border-accent"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={handleApplyPromo}
+                                            disabled={isValidatingPromo || !promoCode.trim()}
+                                            className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white px-5 py-2.5 text-[10px] font-black tracking-widest uppercase transition-all disabled:opacity-30 cursor-pointer border-none rounded-none outline-none"
+                                        >
+                                            {isValidatingPromo ? '...' : 'Apply'}
+                                        </button>
+                                    </div>
+                                )}
+                                {promoError && (
+                                    <p className="text-[10px] font-semibold text-red-500 mt-1">{promoError}</p>
+                                )}
+                            </div>
+
                             <div className="border-t border-[var(--surface-border)] pt-3 space-y-1.5 text-sm">
                                 <div className="flex justify-between text-[var(--text-secondary)]">
                                     <span>Subtotal</span><span>Rs. {cartTotal.toFixed(2)}</span>
                                 </div>
+                                {appliedPromo && (
+                                    <div className="flex justify-between text-green-600 dark:text-green-400 font-semibold">
+                                        <span>Promo Discount ({appliedPromo})</span><span>-Rs. {promoDiscount.toFixed(2)}</span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between text-[var(--text-secondary)]">
                                     <span>Shipping</span>
                                     <span>{shipping === 0 && cartTotal > 0 ? 'Free' : `Rs. ${shipping.toFixed(2)}`}</span>
@@ -550,30 +704,85 @@ const Checkout = () => {
 
                                 {/* Product list */}
                                 <div className="space-y-3 mb-4 max-h-[300px] overflow-y-auto">
-                                    {cartItems.map((item, idx) => (
-                                        <div key={idx} className="flex items-center gap-3">
-                                            <div className="relative shrink-0">
-                                                <div className="w-14 h-16 bg-[var(--surface-color)] border border-[var(--surface-border)] overflow-hidden">
-                                                    <img src={resolveImage(item.image)} alt={item.name} className="w-full h-full object-cover" />
+                                    {cartItems.map((item, idx) => {
+                                        const resolvedPrice = item.salePrice != null ? item.salePrice : item.price;
+                                        return (
+                                            <div key={idx} className="flex items-center gap-3">
+                                                <div className="relative shrink-0">
+                                                    <div className="w-14 h-16 bg-[var(--surface-color)] border border-[var(--surface-border)] overflow-hidden">
+                                                        <img src={resolveImage(item.image)} alt={item.name} className="w-full h-full object-cover" />
+                                                    </div>
+                                                    {/* Qty badge */}
+                                                    <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-[var(--text-primary)] text-[var(--bg-color)] text-[10px] font-black flex items-center justify-center">
+                                                        {item.quantity}
+                                                    </span>
                                                 </div>
-                                                {/* Qty badge */}
-                                                <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-[var(--text-primary)] text-[var(--bg-color)] text-[10px] font-black flex items-center justify-center">
-                                                    {item.quantity}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[13px] font-semibold text-[var(--text-primary)] leading-tight truncate">{item.name}</p>
+                                                    {item.variations && Object.keys(item.variations).length > 0 && (
+                                                        <p className="text-[11px] text-[var(--text-muted)] truncate">
+                                                            {Object.entries(item.variations).map(([k, v]) => `${k}: ${v}`).join(' · ')}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <p className="text-sm font-bold text-[var(--text-primary)] shrink-0">
+                                                    Rs. {((resolvedPrice || 0) * item.quantity).toFixed(2)}
+                                                </p>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* Promo Code Form */}
+                                <div className="border-t border-[var(--surface-border)] pt-4 mb-4">
+                                    <h3 className="text-[10px] font-bold tracking-widest uppercase text-[var(--text-secondary)] mb-2">
+                                        Have a Promo Code?
+                                    </h3>
+                                    {appliedPromo ? (
+                                        <div className="flex items-center justify-between bg-green-500/10 border border-green-500/20 px-3 py-2.5 rounded-[2px]">
+                                            <div>
+                                                <span className="text-xs font-black text-green-600 dark:text-green-400 tracking-wider">
+                                                    {appliedPromo}
                                                 </span>
+                                                <p className="text-[10px] text-green-600/80 dark:text-green-400/80">
+                                                    Rs. {promoDiscount.toFixed(2)} discount applied
+                                                </p>
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-[13px] font-semibold text-[var(--text-primary)] leading-tight truncate">{item.name}</p>
-                                                {item.variations && Object.keys(item.variations).length > 0 && (
-                                                    <p className="text-[11px] text-[var(--text-muted)] truncate">
-                                                        {Object.entries(item.variations).map(([k, v]) => `${k}: ${v}`).join(' · ')}
-                                                    </p>
-                                                )}
-                                            </div>
-                                            <p className="text-sm font-bold text-[var(--text-primary)] shrink-0">
-                                                Rs. {((item.price || 0) * item.quantity).toFixed(2)}
-                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setAppliedPromo(null);
+                                                    setPromoDiscount(0);
+                                                    setPromoCode('');
+                                                    showToast('Promo code removed', 'info');
+                                                }}
+                                                className="text-[10px] font-bold text-red-500 hover:underline tracking-widest uppercase"
+                                            >
+                                                Remove
+                                            </button>
                                         </div>
-                                    ))}
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                placeholder="ENTER CODE"
+                                                value={promoCode}
+                                                onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                                                className="flex-1 bg-[var(--surface-color)] border border-[var(--surface-border)] px-3 py-2 text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider outline-none focus:border-accent"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleApplyPromo}
+                                                disabled={isValidatingPromo || !promoCode.trim()}
+                                                className="bg-[var(--color-primary)] hover:bg-[var(--color-primary-hover)] text-white px-5 py-2.5 text-[10px] font-black tracking-widest uppercase transition-all disabled:opacity-30 cursor-pointer border-none rounded-none outline-none"
+                                            >
+                                                {isValidatingPromo ? '...' : 'Apply'}
+                                            </button>
+                                        </div>
+                                    )}
+                                    {promoError && (
+                                        <p className="text-[10px] font-semibold text-red-500 mt-1">{promoError}</p>
+                                    )}
                                 </div>
 
                                 {/* Pricing breakdown */}
@@ -582,6 +791,12 @@ const Checkout = () => {
                                         <span>Subtotal</span>
                                         <span className="font-semibold text-[var(--text-primary)]">Rs. {cartTotal.toFixed(2)}</span>
                                     </div>
+                                    {appliedPromo && (
+                                        <div className="flex justify-between text-sm text-green-600 dark:text-green-400 font-semibold">
+                                            <span>Promo Discount ({appliedPromo})</span>
+                                            <span>-Rs. {promoDiscount.toFixed(2)}</span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between text-sm text-[var(--text-secondary)]">
                                         <div className="flex items-center gap-2">
                                             <span>Shipping</span>

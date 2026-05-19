@@ -33,6 +33,7 @@ const OrderList = lazy(() => import('./admin/pages/OrderList'));
 const Analytics = lazy(() => import('./admin/pages/Analytics'));
 const AdminSettings = lazy(() => import('./admin/pages/Settings'));
 const ReviewsList = lazy(() => import('./admin/pages/ReviewsList'));
+const SalesDiscounts = lazy(() => import('./admin/pages/SalesDiscounts'));
 
 /* Layout wrapper for storefront pages — renders Navbar, page content via Outlet, and Footer */
 const StorefrontLayout = () => {
@@ -75,6 +76,7 @@ function App() {
                         <Route path="orders" element={<OrderList />} />
                         <Route path="settings" element={<AdminSettings />} />
                         <Route path="reviews" element={<ReviewsList />} />
+                        <Route path="sales-discounts" element={<SalesDiscounts />} />
                     </Route>
 
                     {/* Storefront Routes */}
