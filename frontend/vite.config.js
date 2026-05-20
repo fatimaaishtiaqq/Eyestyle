@@ -8,11 +8,19 @@ export default defineConfig({
     build: {
         rollupOptions: {
             output: {
-                manualChunks: {
-                    'vendor-three': ['three', '@react-three/fiber', '@react-three/drei'],
-                    'vendor-gsap': ['gsap', '@gsap/react'],
-                    'vendor-firebase': ['firebase/app', 'firebase/auth'],
-                    'vendor-charts': ['recharts'],
+                manualChunks: (id) => {
+                    if (id.includes('node_modules/three') || id.includes('node_modules/@react-three')) {
+                        return 'vendor-three';
+                    }
+                    if (id.includes('node_modules/gsap') || id.includes('node_modules/@gsap')) {
+                        return 'vendor-gsap';
+                    }
+                    if (id.includes('node_modules/firebase')) {
+                        return 'vendor-firebase';
+                    }
+                    if (id.includes('node_modules/recharts')) {
+                        return 'vendor-charts';
+                    }
                 },
             },
         },

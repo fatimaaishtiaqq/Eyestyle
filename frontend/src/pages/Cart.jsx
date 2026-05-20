@@ -36,20 +36,26 @@ const Cart = () => {
     }
 
     useGSAP(() => {
-        gsap.from('.cart-item-row', {
-            opacity: 0,
-            x: -15,
-            duration: 0.35,
-            stagger: 0.06,
-            ease: 'power2.out'
-        });
-        gsap.from('.summary-panel', {
-            opacity: 0,
-            y: 15,
-            duration: 0.4,
-            delay: 0.15,
-            ease: 'power2.out'
-        });
+        if (!containerRef.current) return;
+
+        if (containerRef.current.querySelector('.cart-item-row')) {
+            gsap.from('.cart-item-row', {
+                opacity: 0,
+                x: -15,
+                duration: 0.35,
+                stagger: 0.06,
+                ease: 'power2.out'
+            });
+        }
+        if (containerRef.current.querySelector('.summary-panel')) {
+            gsap.from('.summary-panel', {
+                opacity: 0,
+                y: 15,
+                duration: 0.4,
+                delay: 0.15,
+                ease: 'power2.out'
+            });
+        }
     }, { scope: containerRef, dependencies: [cartItems.length] });
 
     const resolveImage = (img) => {

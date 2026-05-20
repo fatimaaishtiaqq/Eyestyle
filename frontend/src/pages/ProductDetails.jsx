@@ -149,6 +149,11 @@ const ProductDetails = () => {
     const containerRef = React.useRef(null);
     const prefersReducedMotion = useReducedMotion();
 
+    // Animation tracking refs to prevent re-running GSAP when states change
+    const animatedMainRef = React.useRef(false);
+    const animatedRelatedRef = React.useRef(false);
+    const animatedRecentRef = React.useRef(false);
+
     useEffect(() => {
         try {
             const stored = localStorage.getItem('lux_user');
@@ -156,6 +161,10 @@ const ProductDetails = () => {
         } catch {
             setCurrentUser(null);
         }
+        // Reset animation tracking when changing products
+        animatedMainRef.current = false;
+        animatedRelatedRef.current = false;
+        animatedRecentRef.current = false;
     }, [id]);
 
     useGSAP(() => {
@@ -163,50 +172,95 @@ const ProductDetails = () => {
             typeof window.matchMedia === 'function' &&
             window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-        if (prefersReduce || !product) {
+        if (prefersReduce || !product || loading || !containerRef.current) {
             return;
         }
 
-        gsap.to('.product-image-parallax', {
-            y: -30,
-            ease: "none",
-            scrollTrigger: {
-                trigger: '.product-image-container',
-                start: "top bottom",
-                end: "bottom top",
-                scrub: true
+        // 1. Animate Main Product Info (once)
+        if (!animatedMainRef.current) {
+            let animated = false;
+
+            if (containerRef.current.querySelector('.product-image-parallax')) {
+                gsap.to('.product-image-parallax', {
+                    y: -30,
+                    ease: "none",
+                    scrollTrigger: {
+                        trigger: '.product-image-container',
+                        start: "top bottom",
+                        end: "bottom top",
+                        scrub: true
+                    }
+                });
+                animated = true;
             }
-        });
 
-        // Very fast reveal — no delay so content shows as soon as product loads
-        gsap.from('.product-title', {
-            y: 18,
-            opacity: 0,
-            duration: 0.28,
-            ease: "power2.out"
-        });
-
-        gsap.from('.stagger-reveal > *', {
-            y: 10,
-            opacity: 0,
-            duration: 0.22,
-            stagger: 0.04,
-            ease: "power2.out",
-            delay: 0.08
-        });
-
-        gsap.from('.related-product-card', {
-            y: 20,
-            opacity: 0,
-            duration: 0.35,
-            stagger: 0.05,
-            ease: 'power2.out',
-            scrollTrigger: {
-                trigger: '.related-section',
-                start: 'top 92%',
-                once: true
+            // Very fast reveal — no delay so content shows as soon as product loads
+            if (containerRef.current.querySelector('.product-title')) {
+                gsap.fromTo('.product-title',
+                    { y: 18, opacity: 0 },
+                    { y: 0, opacity: 1, duration: 0.28, ease: "power2.out" }
+                );
+                animated = true;
             }
-        });
+
+            if (containerRef.current.querySelector('.stagger-reveal')) {
+                gsap.fromTo('.stagger-reveal > *',
+                    { y: 10, opacity: 0 },
+                    { y: 0, opacity: 1, duration: 0.22, stagger: 0.04, ease: "power2.out", delay: 0.08 }
+                );
+                animated = true;
+            }
+
+            if (animated) {
+                animatedMainRef.current = true;
+            }
+        }
+
+        // 2. Animate Related Products (once when relatedProducts is loaded and rendered)
+        if (!animatedRelatedRef.current && relatedProducts.length > 0) {
+            const cards = containerRef.current.querySelectorAll('.curated-section .related-product-card');
+            if (cards.length > 0) {
+                gsap.fromTo(cards,
+                    { y: 20, opacity: 0 },
+                    {
+                        y: 0,
+                        opacity: 1,
+                        duration: 0.35,
+                        stagger: 0.05,
+                        ease: 'power2.out',
+                        scrollTrigger: {
+                            trigger: '.curated-section',
+                            start: 'top 92%',
+                            once: true
+                        }
+                    }
+                );
+                animatedRelatedRef.current = true;
+            }
+        }
+
+        // 3. Animate Recently Viewed Products (once when recentlyViewed is loaded and rendered)
+        if (!animatedRecentRef.current && recentlyViewed.length > 0) {
+            const cards = containerRef.current.querySelectorAll('.recent-history-section .related-product-card');
+            if (cards.length > 0) {
+                gsap.fromTo(cards,
+                    { y: 20, opacity: 0 },
+                    {
+                        y: 0,
+                        opacity: 1,
+                        duration: 0.35,
+                        stagger: 0.05,
+                        ease: 'power2.out',
+                        scrollTrigger: {
+                            trigger: '.recent-history-section',
+                            start: 'top 92%',
+                            once: true
+                        }
+                    }
+                );
+                animatedRecentRef.current = true;
+            }
+        }
 
         const t = setTimeout(() => ScrollTrigger.refresh(), 60);
         let scrollEndTicker;
@@ -221,7 +275,7 @@ const ProductDetails = () => {
             window.removeEventListener('scroll', onScrollEnd);
             ScrollTrigger.getAll().forEach((st) => st.kill());
         };
-    }, { scope: product ? containerRef : undefined, dependencies: [product] });
+    }, { scope: containerRef, dependencies: [product, loading, relatedProducts, recentlyViewed] });
 
     const fetchReviewsAndEligibility = async () => {
         try {
@@ -1118,7 +1172,7 @@ const ProductDetails = () => {
 
 
                     {/* Related Products Section */}
-                    <div className="mt-8 md:mt-12 lg:mt-16 w-full related-section">
+                    <div className="mt-8 md:mt-12 lg:mt-16 w-full related-section curated-section">
                         <div className="mb-12 text-center">
                             <h2 className="text-[9px] font-black tracking-[0.8em] uppercase opacity-30 mb-4">CURATED SELECTION</h2>
                             <h3 className="text-3xl md:text-5xl font-serif font-black tracking-tighter uppercase italic italic-outline">YOU MAY ALSO DESIRE</h3>
@@ -1135,7 +1189,7 @@ const ProductDetails = () => {
 
                     {/* Recently Viewed Products Section */}
                     {recentlyViewed.length > 0 && (
-                        <div className="mt-8 md:mt-12 lg:mt-16 w-full related-section">
+                        <div className="mt-8 md:mt-12 lg:mt-16 w-full related-section recent-history-section">
                             <div className="mb-12 text-center">
                                 <h2 className="text-[9px] font-black tracking-[0.8em] uppercase opacity-30 mb-4">YOUR HISTORY</h2>
                                 <h3 className="text-3xl md:text-5xl font-serif font-black tracking-tighter uppercase italic italic-outline">RECENTLY VIEWED</h3>

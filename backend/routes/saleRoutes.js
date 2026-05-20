@@ -55,9 +55,14 @@ router.post('/', protect, admin, async (req, res) => {
             return res.status(400).json({ message: 'Sale name can only contain letters, numbers, hyphens, and spaces' });
         }
 
-        const saleExists = await Sale.findOne({ name: { $regex: new RegExp(`^${name.trim()}$`, 'i') } });
+        const now = new Date();
+        const saleExists = await Sale.findOne({
+            name: { $regex: new RegExp(`^${name.trim()}$`, 'i') },
+            status: { $ne: 'cancelled' },
+            endDate: { $gte: now }
+        });
         if (saleExists) {
-            return res.status(400).json({ message: 'A sale with this name already exists' });
+            return res.status(400).json({ message: 'An active or scheduled sale with this name already exists' });
         }
 
         if (discountType === 'percentage' && (discountValue < 1 || discountValue > 90)) {
@@ -82,7 +87,6 @@ router.post('/', protect, admin, async (req, res) => {
             return res.status(400).json({ message: 'Maximum sale duration is 30 days' });
         }
 
-        const now = new Date();
         let initialStatus = 'scheduled';
         if (now >= start && now <= end) {
             initialStatus = 'active';
@@ -148,9 +152,14 @@ router.put('/:id', protect, admin, async (req, res) => {
         }
 
         if (name && name.trim().toLowerCase() !== sale.name.toLowerCase()) {
-            const saleExists = await Sale.findOne({ name: { $regex: new RegExp(`^${name.trim()}$`, 'i') } });
+            const now = new Date();
+            const saleExists = await Sale.findOne({
+                name: { $regex: new RegExp(`^${name.trim()}$`, 'i') },
+                status: { $ne: 'cancelled' },
+                endDate: { $gte: now }
+            });
             if (saleExists) {
-                return res.status(400).json({ message: 'A sale with this name already exists' });
+                return res.status(400).json({ message: 'An active or scheduled sale with this name already exists' });
             }
             sale.name = name.trim();
         }

@@ -192,10 +192,10 @@ const Home = () => {
             typeof window.matchMedia === 'function' &&
             window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-        if (prefersReduce) return;
+        if (prefersReduce || !containerRef.current) return;
 
         // Scroll reveals for all sections — once: true keeps content visible after first play
-        const sections = gsap.utils.toArray('section');
+        const sections = gsap.utils.toArray(containerRef.current.querySelectorAll('section'));
         sections.forEach((section) => {
             gsap.from(section, {
                 opacity: 0,
@@ -212,12 +212,13 @@ const Home = () => {
         });
 
         // Parallax effect for section images
-        if (document.querySelector('.parallax-img')) {
-            gsap.to('.parallax-img', {
+        const parallaxImg = containerRef.current.querySelector('.parallax-img');
+        if (parallaxImg) {
+            gsap.to(parallaxImg, {
                 yPercent: -20,
                 ease: 'none',
                 scrollTrigger: {
-                    trigger: '.parallax-img',
+                    trigger: parallaxImg,
                     scrub: true
                 }
             });

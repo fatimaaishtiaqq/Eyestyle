@@ -269,6 +269,30 @@ const SalesDiscounts = () => {
         }
     };
 
+    // Delete Sale Campaign
+    const handleDeleteSale = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this sale campaign permanently?')) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/sales/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${user.token}` }
+            });
+
+            if (res.ok) {
+                showToast('Sale campaign deleted successfully', 'success');
+                if (selectedItem && selectedItem._id === id) {
+                    setSelectedItem(null);
+                    setActiveTab('promotions');
+                }
+                fetchData();
+            } else {
+                showToast('Failed to delete sale campaign', 'error');
+            }
+        } catch (err) {
+            showToast('Server error deleting sale campaign', 'error');
+        }
+    };
+
     // Cancel Coupon Code
     const handleCancelCoupon = async (id) => {
         if (!window.confirm('Are you sure you want to deactivate this coupon code? It will no longer be valid for checkout.')) return;
@@ -525,13 +549,21 @@ const SalesDiscounts = () => {
                                                         >
                                                             <Eye size={15} />
                                                         </button>
-                                                        {sale.status !== 'expired' && (
+                                                        {sale.status !== 'expired' && sale.status !== 'cancelled' ? (
                                                             <button 
                                                                 onClick={() => handleCancelSale(sale._id)}
                                                                 className="text-red-500 hover:text-red-700 p-1 transition-colors"
                                                                 title="Cancel Campaign"
                                                             >
                                                                 <X size={15} />
+                                                            </button>
+                                                        ) : (
+                                                            <button 
+                                                                onClick={() => handleDeleteSale(sale._id)}
+                                                                className="text-red-500 hover:text-red-700 p-1 transition-colors"
+                                                                title="Delete Campaign"
+                                                            >
+                                                                <Trash2 size={15} />
                                                             </button>
                                                         )}
                                                     </td>
