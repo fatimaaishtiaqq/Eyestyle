@@ -75,6 +75,14 @@ export const checkSession = () => {
  * @param {'idle'|'max'|'manual'} reason - Why the logout happened
  */
 export const performLogout = async (reason = 'manual') => {
+    // Clear httpOnly JWT cookie via backend
+    try {
+        await fetch((import.meta.env.PROD ? 'https://eyestyle-backend.onrender.com' : 'http://localhost:5000') + '/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include',
+        });
+    } catch { /* silent */ }
+
     // Clear auth data from localStorage
     localStorage.removeItem(KEY_USER);
     localStorage.removeItem(KEY_LOGIN_TIME);

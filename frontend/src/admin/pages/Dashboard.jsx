@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router-dom';
 import { Users, Package, DollarSign, LayoutDashboard, Edit, Trash2 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
@@ -18,55 +19,45 @@ const AdminDashboard = () => {
             navigate('/account');
         }
     }, [user, navigate]);
-    // Dashboard state
-    const [metrics, setMetrics] = useState({
-        totalRevenue: 0,
-        activeOrders: 0,
-        totalCustomers: 0
+    // Dashboard data via React Query
+    const { data: metricsData, isLoading: metricsLoading } = useQuery({
+        queryKey: ['admin-stats'],
+        queryFn: async () => {
+            const res = await fetch(`${API_BASE_URL}/api/dashboard/metrics`, {
+                headers: { 'Authorization': `Bearer ${user?.token}` },
+                credentials: 'include',
+            });
+            if (!res.ok) throw new Error('Failed to fetch metrics');
+            return res.json();
+        },
+        staleTime: 1000 * 30,
+        gcTime: 1000 * 60 * 5,
+        refetchOnWindowFocus: false,
+        enabled: !!(user?.token),
     });
-    const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
 
-    React.useEffect(() => {
-        const fetchDashboardData = async () => {
-            if (!user || (!user.isAdmin && user.role !== 'superadmin' && user.role !== 'manager')) return;
+    const { data: productsData, isLoading: productsLoading } = useQuery({
+        queryKey: ['admin-dashboard-products'],
+        queryFn: async () => {
+            const res = await fetch(`${API_BASE_URL}/api/products/admin?limit=5&page=1`, {
+                headers: { 'Authorization': `Bearer ${user?.token}` },
+                credentials: 'include',
+            });
+            if (!res.ok) throw new Error('Failed to fetch products');
+            return res.json();
+        },
+        staleTime: 1000 * 60,
+        gcTime: 1000 * 60 * 5,
+        refetchOnWindowFocus: false,
+        enabled: !!(user?.token),
+    });
 
-            try {
-                // Fetch metrics
-                const metricsRes = await fetch(`${API_BASE_URL}/api/dashboard/metrics`, {
-                    headers: { 'Authorization': `Bearer ${user.token}` }
-                });
-                if (metricsRes.ok) {
-                    const metricsData = await metricsRes.json();
-                    setMetrics(metricsData);
-                }
-
-                // Fetch products (for inventory overview)
-                const productsRes = await fetch(`${API_BASE_URL}/api/products`);
-                if (productsRes.ok) {
-                    const productsData = await productsRes.json();
-                    if (productsData.products && Array.isArray(productsData.products)) {
-                        setProducts(productsData.products.slice(0, 5));
-                    } else if (Array.isArray(productsData)) {
-                        setProducts(productsData.slice(0, 5));
-                    }
-                }
-            } catch (err) {
-                console.error("Failed to fetch dashboard data:", err);
-                showToast('Failed to load dashboard data', 'error');
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchDashboardData();
-    }, [user?.token]);
+    const loading = metricsLoading || productsLoading;
+    const metrics = metricsData || { totalRevenue: 0, activeOrders: 0, totalCustomers: 0 };
+    const products = productsData?.products?.slice(0, 5) || [];
 
     const handleDelete = (id) => {
-        if (window.confirm('Are you sure you want to delete this product?')) {
-            setProducts(products.filter(p => p.id !== id));
-            showToast('Product deleted successfully', 'error');
-        }
+        showToast('Please delete products from the Products tab', 'info');
     };
 
     if (!user || (!user.isAdmin && user.role !== 'superadmin' && user.role !== 'manager')) return null;

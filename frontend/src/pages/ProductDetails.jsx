@@ -7,7 +7,8 @@ import { useWishlist } from '../context/WishlistContext';
 import { useToast } from '../context/ToastContext';
 import ProductCard from '../components/ProductCard';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { getWithCache, API_BASE_URL, apiFetch, getStoredUser, isSafeMediaUrl } from '../utils/apiClient';
+import { getWithCache, API_BASE_URL, apiFetch, getStoredUser, isSafeMediaUrl, apiFetchPublic } from '../utils/apiClient';
+import { useQuery } from '@tanstack/react-query';
 import { useTheme } from '../context/ThemeContext';
 import ThreeBackground from '../components/ThreeBackground';
 import ProductDetailSkeleton from '../components/skeletons/ProductDetailSkeleton';
@@ -126,9 +127,37 @@ const ProductDetails = () => {
     const { showToast } = useToast();
     const { theme } = useTheme(); // To fetch the current theme for dynamic heart coloring
 
-    const [product, setProduct] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [relatedProducts, setRelatedProducts] = useState([]);
+    const { data: productData, isLoading: loading } = useQuery({
+        queryKey: ['product', id],
+        queryFn: () => apiFetchPublic(`/api/products/${id}`),
+        staleTime: 1000 * 60 * 10,
+        gcTime: 1000 * 60 * 30,
+        refetchOnWindowFocus: false,
+        enabled: !!id,
+    });
+
+    const product = React.useMemo(() => {
+        return productData ? { ...productData, image: normalizeImagePath(productData) } : null;
+    }, [productData]);
+
+    const { data: allProductsData } = useQuery({
+        queryKey: ['products-list'],
+        queryFn: () => apiFetchPublic('/api/products'),
+        staleTime: 1000 * 60 * 5,
+        gcTime: 1000 * 60 * 30,
+        refetchOnWindowFocus: false,
+        enabled: !!product,
+    });
+
+    const relatedProducts = React.useMemo(() => {
+        if (!product || !allProductsData) return [];
+        return (allProductsData.products || []).filter(p => {
+            if (p._id === product._id) return false;
+            const pCat = typeof p.category === 'object' ? String(p.category?._id || p.category?.name) : String(p.category || '');
+            const curCat = typeof product.category === 'object' ? String(product.category?._id || product.category?.name) : String(product.category || '');
+            return pCat && curCat && pCat === curCat;
+        });
+    }, [product, allProductsData]);
     const [recentlyViewed, setRecentlyViewed] = useState([]);
 
     // Reviews System States
@@ -441,38 +470,12 @@ const ProductDetails = () => {
     }, [id]);
 
     useEffect(() => {
-        const fetchProduct = async () => {
-            try {
-                const data = await getWithCache(`/api/products/${id}`, { ttl: 0 });
-
-                const fullProduct = {
-                    ...data,
-                    image: normalizeImagePath(data)
-                };
-                setProduct(fullProduct);
-                setSelectedVariations({});
-                setActiveImage(getDefaultProductImage(fullProduct));
-                setQuantity(1);
-
-                // Fetch all products once (cached) to find related ones
-                const allData = await getWithCache('/api/products');
-                const related = (allData.products || []).filter(p => {
-                    if (p._id === fullProduct._id) return false;
-
-                    const pCat = typeof p.category === 'object' ? String(p.category?._id || p.category?.name) : String(p.category || '');
-                    const curCat = typeof fullProduct.category === 'object' ? String(fullProduct.category?._id || fullProduct.category?.name) : String(fullProduct.category || '');
-
-                    return pCat && curCat && pCat === curCat;
-                });
-                setRelatedProducts(related);
-            } catch (error) {
-                console.error('Failed to fetch product:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchProduct();
-    }, [id]);
+        if (product) {
+            setSelectedVariations({});
+            setActiveImage(getDefaultProductImage(product));
+            setQuantity(1);
+        }
+    }, [id, product ? product._id : null]);
 
     // Manage recently viewed products in localStorage
     useEffect(() => {
@@ -688,18 +691,18 @@ const ProductDetails = () => {
             <div ref={containerRef} className="w-full pb-32 text-[var(--text-primary)] bg-transparent perspective-2000">
                 <ThreeBackground variant="product" />
 
-                <div className="pt-8 px-6 sm:px-10 max-w-[1600px] mx-auto">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start lg:min-h-[calc(100vh-140px)]">
+                <div className="max-w-[1200px] w-full mx-auto px-10 py-[30px] box-border">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
 
                         {/* Left: Interactive Media Gallery */}
-                        <div className="lg:col-span-6 xl:col-span-7 flex flex-col xl:flex-row gap-4 product-image-container relative lg:sticky lg:top-24 lg:self-start lg:h-[calc(100vh-140px)] z-0">
+                        <div className="lg:col-span-7 flex flex-col lg:flex-row gap-4 product-image-container relative lg:sticky lg:top-24 lg:self-start z-0 w-full">
                             {/* Thumbnails */}
-                            <div className="flex xl:flex-col gap-3 overflow-x-auto xl:overflow-y-auto w-full xl:w-24 max-h-[500px] xl:max-h-full pb-4 xl:pb-0 hide-scrollbar z-10 order-2 xl:order-1 pr-1">
+                            <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-y-auto w-full lg:w-[90px] max-h-[550px] pb-4 lg:pb-0 hide-scrollbar z-10 order-2 lg:order-1 pr-1 shrink-0">
                                 {allImages.map((img, idx) => (
                                     <button
                                         key={idx}
                                         onClick={() => { setActiveImage(img); setHoverThumbnail(null); }}
-                                        className={`relative aspect-[3/4] w-20 md:w-24 xl:w-full shrink-0 overflow-hidden transition-all duration-500 border glass-modern ${displayImage === img ? 'border-accent p-0.5' : 'border-black/5 opacity-50 hover:opacity-100 scale-95 hover:scale-100'}`}
+                                        className={`relative aspect-[3/4] w-20 md:w-24 lg:w-full shrink-0 overflow-hidden transition-all duration-500 border glass-modern ${displayImage === img ? 'border-accent p-0.5' : 'border-black/5 opacity-50 hover:opacity-100 scale-95 hover:scale-100'}`}
                                     >
                                         <img src={img} className="w-full h-full object-cover" alt={`view-${idx}`} />
                                     </button>
@@ -708,7 +711,7 @@ const ProductDetails = () => {
 
                             {/* Main Image */}
                             <motion.div
-                                className="flex-1 aspect-[4/5] md:aspect-[3/4] lg:aspect-auto relative overflow-hidden bg-black/[0.02] order-1 xl:order-2 border border-black/5 glass-panel-premium cursor-crosshair w-full lg:h-full isolate"
+                                className="flex-1 aspect-[4/5] relative overflow-hidden bg-black/[0.02] order-1 lg:order-2 border border-black/5 glass-panel-premium cursor-crosshair w-full max-h-[550px] isolate"
                                 onMouseMove={handleMouseMove}
                                 onMouseLeave={handleMouseLeave}
                                 style={{
@@ -759,8 +762,8 @@ const ProductDetails = () => {
                         </div>
 
                         {/* Right: Premium Product Info */}
-                        <div className="lg:col-span-6 xl:col-span-5 flex flex-col stagger-reveal w-full lg:min-h-[calc(100vh-140px)]">
-                            <div className="glass-panel-premium p-6 sm:p-8 lg:p-10 space-y-5 lg:min-h-full flex flex-col justify-center relative">
+                        <div className="lg:col-span-5 flex flex-col stagger-reveal w-full">
+                            <div className="glass-panel-premium p-6 sm:p-8 lg:p-10 space-y-6 relative w-full h-auto">
 
                                 {/* 1. Title & Price */}
                                 <div className="mb-6">
@@ -786,9 +789,9 @@ const ProductDetails = () => {
                                         </div>
                                     )}
 
-                                    <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4 mb-6">
+                                    <div className="flex flex-row items-center justify-between gap-4 mt-4 mb-6 w-full">
                                         {product.salePrice ? (
-                                            <div className="flex flex-wrap items-baseline gap-3">
+                                            <div className="flex items-baseline gap-3">
                                                 <span className="text-2xl sm:text-3xl font-sans font-black tracking-tight text-orange-500">
                                                     Rs. {Number(product.salePrice).toFixed(2)}
                                                 </span>
@@ -806,14 +809,14 @@ const ProductDetails = () => {
                                                 Rs. {product.price ? Number(product.price).toFixed(2) : '0.00'}
                                             </p>
                                         )}
-                                        <span className="w-8 h-[1px] bg-black/10 hidden sm:block"></span>
-                                        <span className="text-[9px] tracking-[0.4em] font-black uppercase opacity-20 hidden md:inline">ITEM No. {id.slice(-6).toUpperCase()}</span>
+                                        <div className="flex-1 h-[1px] bg-black/10 dark:bg-white/10 mx-4 hidden sm:block"></div>
+                                        <span className="text-[9px] tracking-[0.4em] font-black uppercase opacity-40 shrink-0">ITEM No. {id.slice(-6).toUpperCase()}</span>
                                     </div>
                                 </div>
 
                                 {/* 2. Variations / Color Options */}
                                 {(product.variations && product.variations.length > 0) && (
-                                    <div ref={variationSectionRef} className="pt-6 mt-6 mb-8 border-t border-black/5 space-y-6">
+                                    <div ref={variationSectionRef} className="pt-6 mt-6 mb-8 border-t border-black/10 dark:border-white/10 -mx-6 sm:-mx-8 lg:-mx-10 px-6 sm:px-8 lg:px-10 space-y-6">
                                         {product.variations.map((variation, vIndex) => {
                                             const vName = variation.name;
                                             const totalOptions = variation.options.length;
@@ -881,7 +884,7 @@ const ProductDetails = () => {
                                 )}
 
                                 {/* 3. Purchase Controls */}
-                                <div className="pt-8 mt-8 border-t border-black/5 space-y-5 md:space-y-6">
+                                <div className="pt-8 mt-8 border-t border-black/10 dark:border-white/10 -mx-6 sm:-mx-8 lg:-mx-10 px-6 sm:px-8 lg:px-10 space-y-5 md:space-y-6">
                                     <div className="flex flex-col gap-4 md:gap-6">
                                         {product.countInStock <= 0 ? (
                                             <div className="flex flex-col gap-3">
@@ -893,18 +896,18 @@ const ProductDetails = () => {
                                                 </button>
                                             </div>
                                         ) : (
-                                            <div className="flex flex-row flex-nowrap gap-2 sm:gap-4 h-auto sm:h-12">
+                                            <div className="flex flex-row flex-nowrap gap-4 h-14 w-full">
                                                 {/* Quantity */}
-                                                <div className="flex border border-black/10 items-center justify-between w-20 sm:w-28 h-16 sm:h-full px-2 sm:px-3 bg-black/[0.03] shrink-0">
-                                                    <button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-lg opacity-40 hover:opacity-100 transition-opacity font-black w-6">-</button>
+                                                <div className="flex border border-black/10 items-center justify-between w-[110px] h-full px-3 bg-black/[0.03] shrink-0">
+                                                    <button type="button" onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-lg opacity-40 hover:opacity-100 transition-opacity font-black w-6 select-none">-</button>
                                                     <span className="font-black text-xs">{quantity}</span>
-                                                    <button type="button" onClick={() => setQuantity(product.countInStock != null ? Math.min(product.countInStock, quantity + 1) : quantity + 1)} className="text-lg opacity-40 hover:opacity-100 transition-opacity font-black w-6">+</button>
+                                                    <button type="button" onClick={() => setQuantity(product.countInStock != null ? Math.min(product.countInStock, quantity + 1) : quantity + 1)} className="text-lg opacity-40 hover:opacity-100 transition-opacity font-black w-6 select-none">+</button>
                                                 </div>
 
                                                 {/* Add to Cart */}
                                                 <button
                                                     onClick={handleAddToCart}
-                                                    className="flex-1 h-16 sm:h-full bg-[var(--color-primary)] text-white text-[11px] sm:text-[10px] font-black tracking-[0.4em] uppercase flex items-center justify-center transition-all hover:bg-[var(--color-primary-hover)] group relative overflow-hidden shadow-sm"
+                                                    className="flex-1 h-full bg-[var(--color-primary)] text-white text-[11px] sm:text-[10px] font-black tracking-[0.4em] uppercase flex items-center justify-center transition-all hover:bg-[var(--color-primary-hover)] group relative overflow-hidden shadow-sm"
                                                 >
                                                     <span className="relative z-10">ADD TO CART</span>
                                                     <div className="absolute inset-0 bg-[#000000]/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
@@ -944,7 +947,6 @@ const ProductDetails = () => {
 
                         </div>
                     </div>
-                </div>
 
                 {/* Bottom Section: Description & Details */}
                 <div className="mt-16 lg:mt-24 w-full">
@@ -1206,6 +1208,7 @@ const ProductDetails = () => {
                     )}
                 </div>
             </div>
+        </div>
 
             {/* Notify Me Modal */}
             {createPortal(

@@ -132,7 +132,7 @@ router.get('/profile', protect, async (req, res) => {
 router.get('/users', protect, admin, async (req, res) => {
     try {
         const users = await User.find({ email: { $nin: ['test@gmail.com', 'test01@gmail.com'] } })
-            .select('-password -resetPasswordOtpHash -resetPasswordOtpExpiresAt -resetPasswordOtpVerified');
+            .select('-password -firebaseUid -resetPasswordOtpHash -resetPasswordOtpExpiresAt -resetPasswordOtpVerified -__v');
         res.json(users);
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
@@ -144,7 +144,8 @@ router.get('/users', protect, admin, async (req, res) => {
 // @access  Private/Admin
 router.get('/users/:id', protect, admin, async (req, res) => {
     try {
-        const user = await User.findById(req.params.id).select('-password');
+        const user = await User.findById(req.params.id)
+            .select('-password -firebaseUid -resetPasswordOtpHash -resetPasswordOtpExpiresAt -resetPasswordOtpVerified -__v');
         if (user) {
             res.json(user);
         } else {

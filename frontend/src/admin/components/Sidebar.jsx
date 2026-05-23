@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
     LayoutDashboard,
@@ -15,9 +15,8 @@ import {
     Percent
 } from 'lucide-react';
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, toggleSidebar }) => {
     const location = useLocation();
-    const [isOpen, setIsOpen] = useState(true);
 
     const navItems = [
         { name: 'Dashboard', path: '/admin', icon: <LayoutDashboard size={20} /> },
@@ -28,8 +27,6 @@ const Sidebar = () => {
         { name: 'Sales & Discounts', path: '/admin/sales-discounts', icon: <Percent size={20} /> },
         { name: 'Reviews', path: '/admin/reviews', icon: <MessageSquare size={20} /> }
     ];
-
-    const toggleSidebar = () => setIsOpen(!isOpen);
 
     return (
         <aside className={`bg-[var(--bg-color)] border-r border-[var(--surface-border)] h-screen transition-all duration-300 ${isOpen ? 'w-64' : 'w-20'} flex flex-col fixed left-0 top-0 z-40`}>

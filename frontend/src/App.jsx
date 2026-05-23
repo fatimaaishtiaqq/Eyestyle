@@ -4,6 +4,7 @@ import ScrollToTop from './components/ScrollToTop';
 import SessionManager from './components/SessionManager';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import { ThreeBackgroundCanvas } from './components/ThreeBackground';
 
 // Lazy-load storefront pages for faster initial load
 const Home = lazy(() => import('./pages/Home'));
@@ -41,6 +42,7 @@ const StorefrontLayout = () => {
     const isHome = location.pathname === '/';
     return (
         <div className="flex flex-col min-h-screen relative">
+            <ThreeBackgroundCanvas />
             <div className="relative z-[60]">
                 <Navbar />
             </div>

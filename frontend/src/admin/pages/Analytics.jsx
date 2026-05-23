@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { BarChart3, TrendingUp, TrendingDown, DollarSign, ShoppingCart, Users } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
@@ -9,43 +10,23 @@ const Analytics = () => {
     const storedUser = localStorage.getItem('lux_user');
     const user = storedUser ? JSON.parse(storedUser) : null;
 
-    const [metrics, setMetrics] = useState({
-        totalRevenue: 0,
-        activeOrders: 0,
-        totalOrders: 0,
-        totalCustomers: 0
+    const { data: analyticsData, isLoading: loading } = useQuery({
+        queryKey: ['admin-analytics'],
+        queryFn: async () => {
+            const res = await fetch(`${API_BASE_URL}/api/dashboard/metrics`, {
+                headers: { 'Authorization': `Bearer ${user?.token}` },
+                credentials: 'include',
+            });
+            if (!res.ok) throw new Error('Failed to fetch analytics');
+            return res.json();
+        },
+        staleTime: 1000 * 30,
+        gcTime: 1000 * 60 * 5,
+        refetchOnWindowFocus: false,
+        enabled: !!(user?.token),
     });
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchAnalytics = async () => {
-            if (!user) return;
-            try {
-                const res = await fetch(`${API_BASE_URL}/api/dashboard/metrics`, {
-                    headers: { 'Authorization': `Bearer ${user.token}` }
-                });
-                if (res.ok) {
-                    const text = await res.text();
-                    try {
-                        const data = JSON.parse(text);
-                        setMetrics(data);
-                    } catch (parseErr) {
-                        console.error('JSON Parse error on analytics data:', text.substring(0, 100));
-                        showToast('Invalid analytics data received', 'error');
-                    }
-                } else {
-                    console.error('Analytics fetch status:', res.status);
-                    showToast('Failed to load analytics data', 'error');
-                }
-            } catch (error) {
-                console.error('Network or fetch error on analytics:', error);
-                showToast('Network error loading analytics', 'error');
-            } finally {
-                setLoading(false);
-            }
-        };
-        if (user?.token) fetchAnalytics();
-    }, [user?.token, showToast]);
+    const metrics = analyticsData || { totalRevenue: 0, activeOrders: 0, totalOrders: 0, totalCustomers: 0 };
 
     // Mock recent data to make charts look dynamic based on actual metrics
     const generateChartData = () => {

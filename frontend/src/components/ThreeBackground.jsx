@@ -143,7 +143,20 @@ const SCENES = {
     },
 };
 
-const ThreeBackground = ({ variant = 'default' }) => {
+// Global singleton state variables
+let globalSetVariant = null;
+let activeInstances = 0;
+
+export const ThreeBackgroundCanvas = () => {
+    const [variant, setVariant] = useState('default');
+
+    useEffect(() => {
+        globalSetVariant = setVariant;
+        return () => {
+            globalSetVariant = null;
+        };
+    }, []);
+
     const scrollRef = useRef(0);
     const mouseRef = useRef({ x: 0, y: 0 });
     const [shouldRender, setShouldRender] = useState(false);
@@ -237,6 +250,14 @@ const ThreeBackground = ({ variant = 'default' }) => {
                 dpr={[1, 1.8]}
                 onCreated={({ gl }) => {
                     gl.setClearColor(0x000000, 0);
+                    
+                    // Listen to GPU recovery events
+                    const canvasEl = gl.domElement;
+                    const handleContextLost = (e) => {
+                        e.preventDefault();
+                        console.warn('WebGL Context Lost inside singleton ThreeBackground. Attempting recovery...');
+                    };
+                    canvasEl.addEventListener('webglcontextlost', handleContextLost, false);
                 }}
             >
                 <Suspense fallback={null}>
@@ -253,6 +274,26 @@ const ThreeBackground = ({ variant = 'default' }) => {
             </Canvas>
         </div>
     );
+};
+
+// Singleton Controller Shell component rendered inside individual pages
+const ThreeBackground = ({ variant = 'default' }) => {
+    useEffect(() => {
+        activeInstances++;
+        if (globalSetVariant) {
+            globalSetVariant(variant);
+        }
+        return () => {
+            activeInstances--;
+            setTimeout(() => {
+                if (globalSetVariant && activeInstances === 0) {
+                    globalSetVariant('default');
+                }
+            }, 50);
+        };
+    }, [variant]);
+
+    return null; // Renders nothing locally in the page
 };
 
 export default React.memo(ThreeBackground);

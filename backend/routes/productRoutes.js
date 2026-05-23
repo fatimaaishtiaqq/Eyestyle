@@ -31,7 +31,7 @@ const getActiveSales = async () => {
 // Call this whenever a sale is created/updated/cancelled to invalidate cache
 export const invalidateSaleCache = () => { _saleCache = { data: null, expiresAt: 0 }; };
 
-const applyActiveSalesToProducts = async (products) => {
+export const applyActiveSalesToProducts = async (products) => {
     const isArray = Array.isArray(products);
     const productList = isArray ? products : [products];
     
@@ -258,7 +258,7 @@ const validateVariationImages = (variations) => {
 
 // Ensure product variations in API response have consistent shape: { name, includeImages, options: [{ value, image }] }
 // Merges legacy variationImages into options when present
-const normalizeProductVariationsForResponse = (product) => {
+export const normalizeProductVariationsForResponse = (product) => {
     const p = product.toObject ? product.toObject() : { ...product };
     const legacyMaps = Array.isArray(p.variationImages) ? p.variationImages : [];
     if (!Array.isArray(p.variations)) return p;

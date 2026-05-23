@@ -26,12 +26,13 @@ const Topbar = () => {
         const fetchPendingOrders = async () => {
             if (!user?.token) return;
             try {
-                const res = await fetch(`${API_BASE_URL}/api/orders`, {
+                const res = await fetch(`${API_BASE_URL}/api/orders?status=pending`, {
                     headers: { 'Authorization': `Bearer ${user.token}` }
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    const pendingOrders = data.filter(order => order.status === 'pending');
+                    const ordersList = data && Array.isArray(data.orders) ? data.orders : (Array.isArray(data) ? data : []);
+                    const pendingOrders = ordersList.filter(order => order.status === 'pending');
 
                     // Filter out dismissed notifications
                     const activeNotifs = pendingOrders.filter(order => !dismissedNotifs.includes(order._id));

@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 
 const AdminLayout = () => {
     const navigate = useNavigate();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     // Auth Guard
     useEffect(() => {
@@ -20,10 +21,10 @@ const AdminLayout = () => {
     return (
         <div className="min-h-screen bg-surface flex">
             {/* Sidebar (fixed) */}
-            <Sidebar />
+            <Sidebar isOpen={isSidebarOpen} toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
 
-            {/* Main Content Area (offset by sidebar width) */}
-            <div className="flex-1 min-w-0 flex flex-col transition-all duration-300 ml-20 lg:ml-64">
+            {/* Main Content Area (offset by sidebar width dynamically) */}
+            <div className={`flex-1 min-w-0 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-20'}`}>
                 <Topbar />
                 <main className="flex-1 min-w-0 p-6 lg:p-10 overflow-x-hidden">
                     {/* The nested routes (Dashboard, Products, etc.) will render here */}

@@ -79,6 +79,7 @@ export const apiFetch = async (path, { method = 'GET', body, auth = true, header
         method,
         headers: reqHeaders,
         body: body instanceof FormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
+        credentials: 'include',
     });
 
     if (res.status === 401 && auth) {
@@ -99,7 +100,7 @@ export const getWithCache = async (path, { ttl = DEFAULT_TTL_MS } = {}) => {
         return cached.data;
     }
 
-    const res = await fetchWithRetry(key);
+    const res = await fetchWithRetry(key, { credentials: 'include' });
     if (!res.ok) {
         const text = await res.text().catch(() => '');
         throw new Error(text || `Failed to fetch ${path}`);
@@ -116,6 +117,16 @@ export const invalidateCache = (pathPrefix = '') => {
             cache.delete(key);
         }
     }
+};
+
+export const apiFetchPublic = async (path) => {
+    const url = path.startsWith('http') ? path : buildKey(path);
+    const res = await fetchWithRetry(url, { credentials: 'include' });
+    if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(text || `Failed to fetch ${path}`);
+    }
+    return res.json();
 };
 
 export { API_BASE_URL };

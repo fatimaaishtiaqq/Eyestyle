@@ -3,7 +3,8 @@ import { useParams, useLocation } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import ProductGridSkeleton from '../components/skeletons/ProductGridSkeleton';
 import { Filter, ChevronDown, X } from 'lucide-react';
-import { getWithCache } from '../utils/apiClient';
+import { getWithCache, apiFetchPublic } from '../utils/apiClient';
+import { useQuery } from '@tanstack/react-query';
 import ThreeBackground from '../components/ThreeBackground';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -69,9 +70,22 @@ const Collection = () => {
         setPriceRange('');
     };
 
-    const [allProducts, setAllProducts] = useState([]);
-    const [allCategories, setAllCategories] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const { data: collectionData, isLoading: loading } = useQuery({
+        queryKey: ['collection-data'],
+        queryFn: async () => {
+            const [prodData, catData] = await Promise.all([
+                apiFetchPublic('/api/products'),
+                apiFetchPublic('/api/categories'),
+            ]);
+            return { products: prodData.products || [], categories: catData || [] };
+        },
+        staleTime: 1000 * 60 * 5,
+        gcTime: 1000 * 60 * 30,
+        refetchOnWindowFocus: false,
+    });
+
+    const allProducts = collectionData?.products || [];
+    const allCategories = collectionData?.categories || [];
 
     const containerRef = React.useRef(null);
 
@@ -99,23 +113,7 @@ const Collection = () => {
         return () => clearTimeout(t);
     }, { scope: containerRef, dependencies: [loading] });
 
-    useEffect(() => {
-        const fetchProductsAndCategories = async () => {
-            try {
-                const [prodData, catData] = await Promise.all([
-                    getWithCache('/api/products'),
-                    getWithCache('/api/categories')
-                ]);
-                setAllProducts(prodData.products || []);
-                setAllCategories(catData || []);
-            } catch (error) {
-                console.error('Failed to fetch data:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchProductsAndCategories();
-    }, []);
+
 
     // ── Filter logic based on fetched live products ──────────────────────────
 

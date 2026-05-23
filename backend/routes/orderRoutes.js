@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Stripe from 'stripe';
 import Order from '../models/Order.js';
 import Sale from '../models/Sale.js';
@@ -305,8 +306,46 @@ router.get('/:id', protect, async (req, res) => {
 // @access  Private/Admin
 router.get('/', protect, admin, async (req, res) => {
     try {
-        const orders = await Order.find({}).populate('user', 'name email').sort({ createdAt: -1 });
-        res.json(orders);
+        const pageSize = Number(req.query.limit) || 20;
+        const page = Number(req.query.page) || 1;
+
+        const filter = {};
+
+        if (req.query.status) {
+            filter.status = req.query.status;
+        }
+
+        if (req.query.search) {
+            const search = req.query.search.trim();
+            if (mongoose.Types.ObjectId.isValid(search)) {
+                filter._id = search;
+            } else {
+                const User = mongoose.model('User');
+                const matchingUsers = await User.find({
+                    $or: [
+                        { name: { $regex: search, $options: 'i' } },
+                        { email: { $regex: search, $options: 'i' } }
+                    ]
+                }).select('_id');
+                const userIds = matchingUsers.map(u => u._id);
+                filter.user = { $in: userIds };
+            }
+        }
+
+        const count = await Order.countDocuments(filter);
+        const orders = await Order.find(filter)
+            .populate('user', 'name email')
+            .sort({ createdAt: -1 })
+            .limit(pageSize)
+            .skip(pageSize * (page - 1))
+            .lean();
+
+        res.json({
+            orders,
+            page,
+            pages: Math.ceil(count / pageSize),
+            total: count
+        });
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }

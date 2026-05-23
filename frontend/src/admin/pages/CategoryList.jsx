@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Edit, Trash2, Search, Plus, X } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import AdminTableSkeleton from '../../components/skeletons/AdminTableSkeleton';
@@ -9,11 +10,8 @@ const CategoryList = () => {
     const storedUser = localStorage.getItem('lux_user');
     const user = storedUser ? JSON.parse(storedUser) : null;
 
-    const [categories, setCategories] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
 
-    const filteredCategories = categories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    const [searchTerm, setSearchTerm] = useState('');
 
     // Add Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -21,7 +19,7 @@ const CategoryList = () => {
     const [newCatDesc, setNewCatDesc] = useState('');
     const [newCatParent, setNewCatParent] = useState('');
     const [newCatImage, setNewCatImage] = useState('');
-    const [submitting, setSubmitting] = useState(false);
+    const queryClient = useQueryClient();
 
     // Edit Modal State
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -31,100 +29,115 @@ const CategoryList = () => {
     const [editCatParent, setEditCatParent] = useState('');
     const [editCatImage, setEditCatImage] = useState('');
 
-    const fetchCategories = async () => {
-        try {
+    // ── Queries ──────────────────────────────────────────────────────────────
+    const { data: categoriesData, isLoading: loading } = useQuery({
+        queryKey: ['admin-categories'],
+        queryFn: async () => {
             const res = await fetch(`${API_BASE_URL}/api/categories/admin`, {
-                headers: { 'Authorization': `Bearer ${user?.token}` }
+                headers: { 'Authorization': `Bearer ${user?.token}` },
+                credentials: 'include',
             });
-            if (res.ok) {
-                const data = await res.json();
-                setCategories(data);
-            }
-        } catch (err) {
-            console.error(err);
-            showToast('Failed to fetch categories', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
+            if (!res.ok) throw new Error('Failed to fetch categories');
+            return res.json();
+        },
+        staleTime: 1000 * 60 * 5,
+        gcTime: 1000 * 60 * 30,
+        refetchOnWindowFocus: false,
+        enabled: !!(user?.token),
+    });
 
-    useEffect(() => {
-        if (user?.token) fetchCategories();
-    }, [user?.token]);
+    const categories = categoriesData || [];
+    const filteredCategories = categories.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const handleCreateCategory = async (e) => {
+    // ── Mutations ─────────────────────────────────────────────────────────────
+    const createCategoryMutation = useMutation({
+        mutationFn: async (data) => {
+            const res = await fetch(`${API_BASE_URL}/api/categories`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${user?.token}`, 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Failed to create category'); }
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+            showToast('Category created successfully', 'success');
+            setIsModalOpen(false);
+            setNewCatName('');
+            setNewCatDesc('');
+            setNewCatParent('');
+            setNewCatImage('');
+        },
+        onError: (err) => {
+            showToast(err.message || 'Failed to create category', 'error');
+        },
+    });
+
+    const editCategoryMutation = useMutation({
+        mutationFn: async ({ id, data }) => {
+            const res = await fetch(`${API_BASE_URL}/api/categories/${id}`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${user?.token}`, 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify(data),
+            });
+            if (!res.ok) { const err = await res.json(); throw new Error(err.message || 'Failed to update category'); }
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+            showToast('Category updated successfully', 'success');
+            setIsEditModalOpen(false);
+        },
+        onError: (err) => {
+            showToast(err.message || 'Failed to update category', 'error');
+        },
+    });
+
+    const deleteCategoryMutation = useMutation({
+        mutationFn: async (id) => {
+            const res = await fetch(`${API_BASE_URL}/api/categories/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${user?.token}` },
+                credentials: 'include',
+            });
+            if (!res.ok) throw new Error('Failed to delete category');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['admin-categories'] });
+            showToast('Category deleted', 'success');
+        },
+        onError: () => {
+            showToast('Failed to delete category', 'error');
+        },
+    });
+
+    const submitting = createCategoryMutation.isPending || editCategoryMutation.isPending;
+
+    const handleCreateCategory = (e) => {
         e.preventDefault();
         if (!newCatName.trim()) {
             showToast('Category name is required', 'error');
             return;
         }
-        setSubmitting(true);
-        try {
-            const bodyData = { name: newCatName, description: newCatDesc, image: newCatImage };
-            if (newCatParent) bodyData.parent = newCatParent;
-
-            const res = await fetch(`${API_BASE_URL}/api/categories`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${user?.token}`
-                },
-                body: JSON.stringify(bodyData)
-            });
-
-            if (res.ok) {
-                showToast('Category created successfully', 'success');
-                setIsModalOpen(false);
-                setNewCatName('');
-                setNewCatDesc('');
-                setNewCatParent('');
-                setNewCatImage('');
-                fetchCategories();
-            } else {
-                const data = await res.json();
-                showToast(data.message || 'Failed to create category', 'error');
-            }
-        } catch (err) {
-            showToast('Server error', 'error');
-        } finally {
-            setSubmitting(false);
-        }
+        const bodyData = { name: newCatName, description: newCatDesc, image: newCatImage };
+        if (newCatParent) bodyData.parent = newCatParent;
+        createCategoryMutation.mutate(bodyData);
     };
 
-    const handleEditCategory = async (e) => {
+    const handleEditCategory = (e) => {
         e.preventDefault();
         if (!editCatName.trim()) {
             showToast('Category name is required', 'error');
             return;
         }
-        setSubmitting(true);
-        try {
-            const bodyData = { name: editCatName, description: editCatDesc, image: editCatImage };
-            if (editCatParent) bodyData.parent = editCatParent;
-            else bodyData.parent = null; // Remove parent if not selected
-
-            const res = await fetch(`${API_BASE_URL}/api/categories/${editingCategory._id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${user?.token}`
-                },
-                body: JSON.stringify(bodyData)
-            });
-
-            if (res.ok) {
-                showToast('Category updated successfully', 'success');
-                setIsEditModalOpen(false);
-                fetchCategories();
-            } else {
-                const data = await res.json();
-                showToast(data.message || 'Failed to update category', 'error');
-            }
-        } catch (err) {
-            showToast('Server error', 'error');
-        } finally {
-            setSubmitting(false);
-        }
+        const bodyData = { name: editCatName, description: editCatDesc, image: editCatImage };
+        if (editCatParent) bodyData.parent = editCatParent;
+        else bodyData.parent = null;
+        editCategoryMutation.mutate({ id: editingCategory._id, data: bodyData });
     };
 
     const openEditModal = (cat) => {
@@ -177,23 +190,9 @@ const CategoryList = () => {
         return img;
     };
 
-    const handleDelete = async (id) => {
+    const handleDelete = (id) => {
         if (!window.confirm('Are you sure you want to delete this category?')) return;
-
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/categories/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${user?.token}` }
-            });
-            if (res.ok) {
-                showToast('Category deleted', 'success');
-                fetchCategories();
-            } else {
-                showToast('Failed to delete category', 'error');
-            }
-        } catch (err) {
-            showToast('Server error', 'error');
-        }
+        deleteCategoryMutation.mutate(id);
     };
 
     return (

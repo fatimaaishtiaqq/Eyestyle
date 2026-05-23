@@ -107,7 +107,7 @@ const SalesDiscounts = () => {
 
                 setSales(salesData || []);
                 setCoupons(couponsData || []);
-                setProducts(prodData || []);
+                setProducts(prodData && Array.isArray(prodData.products) ? prodData.products : (Array.isArray(prodData) ? prodData : []));
                 setCategories(catData || []);
 
                 // If deep detail was viewing an item, update it from fresh data

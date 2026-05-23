@@ -21,6 +21,7 @@ import forgotPasswordRoutes from './routes/forgotPasswordRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import saleRoutes from './routes/saleRoutes.js';
 import couponRoutes from './routes/couponRoutes.js';
+import homeRoutes from './routes/homeRoutes.js';
 import { initializeWhatsApp, isReady, latestQRData } from './utils/whatsappClient.js';
 
 dotenv.config();
@@ -110,6 +111,7 @@ app.use('/api/forgot-password', forgotPasswordRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/sales', saleRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/home-data', homeRoutes);
 
 // Phase 8: Logout route — clears the httpOnly JWT cookie
 app.post('/api/auth/logout', (req, res) => {

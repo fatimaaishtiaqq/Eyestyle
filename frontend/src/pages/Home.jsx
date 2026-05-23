@@ -6,7 +6,8 @@ import ProductCard from '../components/ProductCard';
 import ProductGridSkeleton from '../components/skeletons/ProductGridSkeleton';
 import AppSkeletonTheme from '../components/skeletons/AppSkeletonTheme';
 import Skeleton from 'react-loading-skeleton';
-import { API_BASE_URL, getWithCache } from '../utils/apiClient';
+import { API_BASE_URL, getWithCache, apiFetchPublic } from '../utils/apiClient';
+import { useQuery } from '@tanstack/react-query';
 import ThreeBackground from '../components/ThreeBackground';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -58,10 +59,18 @@ const resolveImageUrl = (img) => {
 
 const Home = () => {
     const [currentSlide, setCurrentSlide] = useState(0);
-    const [trendingProducts, setTrendingProducts] = useState([]);
-    const [productsLoading, setProductsLoading] = useState(true);
-    const [categoriesLoading, setCategoriesLoading] = useState(true);
-    const [categories, setCategories] = useState([]);
+    const { data: homeData, isLoading: homeLoading } = useQuery({
+        queryKey: ['home-data'],
+        queryFn: () => apiFetchPublic('/api/home-data'),
+        staleTime: 1000 * 60 * 5,
+        gcTime: 1000 * 60 * 30,
+        refetchOnWindowFocus: false,
+    });
+
+    const trendingProducts = homeData?.featuredProducts || [];
+    const productsLoading = homeLoading;
+    const categories = homeData?.categories || [];
+    const categoriesLoading = homeLoading;
 
     const [direction, setDirection] = useState(1); // 1 for right, -1 for left
 
@@ -138,33 +147,7 @@ const Home = () => {
         };
     }, []);
 
-    useEffect(() => {
-        const fetchProducts = async () => {
-            try {
-                const data = await getWithCache('/api/products');
-                setTrendingProducts(data.products || []);
-            } catch (error) {
-                console.error('Failed to fetch trending products:', error);
-            } finally {
-                setProductsLoading(false);
-            }
-        };
-        fetchProducts();
-    }, []);
 
-    useEffect(() => {
-        const fetchCategories = async () => {
-            try {
-                const data = await getWithCache('/api/categories');
-                setCategories(data.filter(cat => !cat.parent && cat.isActive));
-            } catch (error) {
-                console.error('Failed to fetch categories:', error);
-            } finally {
-                setCategoriesLoading(false);
-            }
-        };
-        fetchCategories();
-    }, []);
 
     const containerRef = useRef(null);
 

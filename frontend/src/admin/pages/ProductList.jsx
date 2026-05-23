@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { Edit, Trash2, Search, Plus, Filter, X } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
@@ -16,10 +17,60 @@ const ProductList = () => {
     const storedUser = localStorage.getItem('lux_user');
     const user = storedUser ? JSON.parse(storedUser) : null;
 
-    const [products, setProducts] = useState([]);
-    const [categories, setCategories] = useState([]);
-    const [subcategories, setSubcategories] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
+
+    const { data: productsData, isLoading: productsLoading } = useQuery({
+        queryKey: ['admin-products'],
+        queryFn: async () => {
+            const res = await fetch(`${API_BASE_URL}/api/products/admin`, {
+                headers: { 'Authorization': `Bearer ${user?.token}` },
+                credentials: 'include',
+            });
+            if (!res.ok) throw new Error('Failed to fetch products');
+            return res.json();
+        },
+        staleTime: 1000 * 60,
+        gcTime: 1000 * 60 * 5,
+        refetchOnWindowFocus: false,
+        enabled: !!(user?.token),
+    });
+
+    const { data: categoriesData, isLoading: categoriesLoading } = useQuery({
+        queryKey: ['admin-categories'],
+        queryFn: async () => {
+            const res = await fetch(`${API_BASE_URL}/api/categories/admin`, {
+                headers: { 'Authorization': `Bearer ${user?.token}` },
+                credentials: 'include',
+            });
+            if (!res.ok) throw new Error('Failed to fetch categories');
+            return res.json();
+        },
+        staleTime: 1000 * 60 * 5,
+        gcTime: 1000 * 60 * 30,
+        refetchOnWindowFocus: false,
+        enabled: !!(user?.token),
+    });
+
+    const { data: subcategoriesData, isLoading: subcategoriesLoading } = useQuery({
+        queryKey: ['admin-subcategories'],
+        queryFn: async () => {
+            const res = await fetch(`${API_BASE_URL}/api/subcategories/admin`, {
+                headers: { 'Authorization': `Bearer ${user?.token}` },
+                credentials: 'include',
+            });
+            if (!res.ok) throw new Error('Failed to fetch subcategories');
+            return res.json();
+        },
+        staleTime: 1000 * 60 * 5,
+        gcTime: 1000 * 60 * 30,
+        refetchOnWindowFocus: false,
+        enabled: !!(user?.token),
+    });
+
+    const products = productsData?.products || productsData || [];
+    const categories = categoriesData || [];
+    const subcategories = subcategoriesData || [];
+    const loading = productsLoading || categoriesLoading || subcategoriesLoading;
 
     const location = useLocation();
 
@@ -64,36 +115,55 @@ const ProductList = () => {
     };
     const [formData, setFormData] = useState(initialFormState);
 
-    const fetchData = async () => {
-        if (!user?.token) return;
-        try {
-            const [prodRes, catRes, subRes] = await Promise.all([
-                fetch(`${API_BASE_URL}/api/products/admin`, { headers: { 'Authorization': `Bearer ${user.token}` } }),
-                fetch(`${API_BASE_URL}/api/categories/admin`, { headers: { 'Authorization': `Bearer ${user.token}` } }),
-                fetch(`${API_BASE_URL}/api/subcategories/admin`, { headers: { 'Authorization': `Bearer ${user.token}` } })
-            ]);
-
-            if (prodRes.ok && catRes.ok) {
-                const prodData = await prodRes.json();
-                const catData = await catRes.json();
-                setProducts(prodData || []);
-                setCategories(catData);
+    const createOrUpdateProductMutation = useMutation({
+        mutationFn: async ({ url, method, bodyData }) => {
+            const res = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${user?.token}`
+                },
+                credentials: 'include',
+                body: JSON.stringify(bodyData)
+            });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.message || 'Failed to submit product');
             }
-            if (subRes.ok) {
-                const subData = await subRes.json();
-                setSubcategories(subData || []);
-            }
-        } catch (err) {
-            console.error(err);
-            showToast('Failed to fetch data', 'error');
-        } finally {
-            setLoading(false);
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+            showToast(`Product ${isEditMode ? 'updated' : 'created'} successfully`, 'success');
+            setIsModalOpen(false);
+            setFormData(initialFormState);
+        },
+        onError: (err) => {
+            showToast(err.message || `Failed to ${isEditMode ? 'update' : 'create'} product`, 'error');
+        },
+        onSettled: () => {
+            setSubmitting(false);
         }
-    };
+    });
 
-    useEffect(() => {
-        if (user?.token) fetchData();
-    }, [user?.token]);
+    const deleteProductMutation = useMutation({
+        mutationFn: async (id) => {
+            const res = await fetch(`${API_BASE_URL}/api/products/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${user?.token}` },
+                credentials: 'include',
+            });
+            if (!res.ok) throw new Error('Failed to delete product');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+            showToast('Product deleted successfully', 'success');
+        },
+        onError: () => {
+            showToast('Failed to delete product', 'error');
+        }
+    });
 
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -126,49 +196,12 @@ const ProductList = () => {
             bodyData.subcategory = formData.subcategory;
         }
 
-        try {
-            const res = await fetch(url, {
-                method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${user?.token}`
-                },
-                body: JSON.stringify(bodyData)
-            });
-
-            if (res.ok) {
-                showToast(`Product ${isEditMode ? 'updated' : 'created'} successfully`, 'success');
-                setIsModalOpen(false);
-                setFormData(initialFormState);
-                fetchData();
-            } else {
-                const data = await res.json();
-                showToast(data.message || `Failed to ${isEditMode ? 'update' : 'create'} product`, 'error');
-            }
-        } catch (err) {
-            showToast('Server error', 'error');
-        } finally {
-            setSubmitting(false);
-        }
+        createOrUpdateProductMutation.mutate({ url, method, bodyData });
     };
 
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to delete this product?')) return;
-
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/products/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${user?.token}` }
-            });
-            if (res.ok) {
-                showToast('Product deleted', 'success');
-                fetchData();
-            } else {
-                showToast('Failed to delete product', 'error');
-            }
-        } catch (err) {
-            showToast('Server error', 'error');
-        }
+        deleteProductMutation.mutate(id);
     };
 
     const openCreateModal = () => {

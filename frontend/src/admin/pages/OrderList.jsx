@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { Eye, Search, Filter, X, FileText } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
@@ -16,8 +17,51 @@ const OrderList = () => {
     const storedUser = localStorage.getItem('lux_user');
     const user = storedUser ? JSON.parse(storedUser) : null;
 
-    const [orders, setOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
+
+    const { data: ordersData, isLoading: loading } = useQuery({
+        queryKey: ['admin-orders'],
+        queryFn: async () => {
+            const res = await fetch(`${API_BASE_URL}/api/orders?limit=1000`, {
+                headers: { 'Authorization': `Bearer ${user?.token}` },
+                credentials: 'include',
+            });
+            if (!res.ok) throw new Error('Failed to fetch orders');
+            return res.json();
+        },
+        staleTime: 1000 * 30,
+        gcTime: 1000 * 60 * 5,
+        refetchOnWindowFocus: false,
+        enabled: !!(user?.token),
+    });
+
+    const orders = ordersData?.orders || ordersData || [];
+
+    const updateOrderStatusMutation = useMutation({
+        mutationFn: async ({ id, status }) => {
+            const res = await fetch(`${API_BASE_URL}/api/orders/${id}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${user?.token}`
+                },
+                credentials: 'include',
+                body: JSON.stringify({ status })
+            });
+            if (!res.ok) throw new Error('Failed to update status');
+            return res.json();
+        },
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+            showToast(`Order marked as ${variables.status}`, 'success');
+            if (selectedOrder && selectedOrder._id === variables.id) {
+                setSelectedOrder(data);
+            }
+        },
+        onError: () => {
+            showToast('Failed to update status', 'error');
+        }
+    });
     const location = useLocation();
 
     // Tabs for Active vs Completed
@@ -62,51 +106,8 @@ const OrderList = () => {
         setIsInvoiceModalOpen(true);
     };
 
-    const fetchOrders = async () => {
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/orders`, {
-                headers: { 'Authorization': `Bearer ${user?.token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setOrders(data);
-            }
-        } catch (err) {
-            console.error(err);
-            showToast('Failed to fetch orders', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (user?.token) fetchOrders();
-    }, [user?.token]);
-
     const handleUpdateStatus = async (id, newStatus) => {
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/orders/${id}/status`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${user?.token}`
-                },
-                body: JSON.stringify({ status: newStatus })
-            });
-
-            if (res.ok) {
-                showToast(`Order marked as ${newStatus}`, 'success');
-                // Also update local state for immediate feedback
-                setOrders(orders.map(o => o._id === id ? { ...o, status: newStatus } : o));
-                if (selectedOrder && selectedOrder._id === id) {
-                    setSelectedOrder({ ...selectedOrder, status: newStatus });
-                }
-            } else {
-                showToast('Failed to update status', 'error');
-            }
-        } catch (err) {
-            showToast('Server error', 'error');
-        }
+        updateOrderStatusMutation.mutate({ id, status: newStatus });
     };
 
     const handleCancelOrder = async (id) => {

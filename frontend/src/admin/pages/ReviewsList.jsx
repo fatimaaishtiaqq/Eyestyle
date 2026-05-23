@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '../../context/ToastContext';
 import { API_BASE_URL } from '../../utils/apiClient';
 import { 
@@ -18,8 +19,126 @@ import AdminTableSkeleton from '../../components/skeletons/AdminTableSkeleton';
 
 const ReviewsList = () => {
     const { showToast } = useToast();
-    const [reviews, setReviews] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const queryClient = useQueryClient();
+
+    const storedUser = localStorage.getItem('lux_user');
+    const user = storedUser ? JSON.parse(storedUser) : null;
+
+    const { data: reviewsData, isLoading: loading } = useQuery({
+        queryKey: ['admin-reviews'],
+        queryFn: async () => {
+            const res = await fetch(`${API_BASE_URL}/api/reviews/admin`, {
+                headers: { 'Authorization': `Bearer ${user?.token}` },
+                credentials: 'include',
+            });
+            if (!res.ok) throw new Error('Failed to fetch reviews');
+            return res.json();
+        },
+        staleTime: 1000 * 30,
+        gcTime: 1000 * 60 * 5,
+        refetchOnWindowFocus: false,
+        enabled: !!(user?.token),
+    });
+
+    const reviews = Array.isArray(reviewsData) 
+        ? reviewsData 
+        : (reviewsData?.reviews || reviewsData?.data || []);
+
+    const approveReviewMutation = useMutation({
+        mutationFn: async (id) => {
+            const res = await fetch(`${API_BASE_URL}/api/reviews/admin/${id}/approve`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${user?.token}` },
+                credentials: 'include',
+            });
+            if (!res.ok) throw new Error('Failed to approve review');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
+            showToast('Review approved successfully', 'success');
+        },
+        onError: () => {
+            showToast('Failed to approve review', 'error');
+        }
+    });
+
+    const rejectReviewMutation = useMutation({
+        mutationFn: async ({ id, reason }) => {
+            const res = await fetch(`${API_BASE_URL}/api/reviews/admin/${id}/reject`, {
+                method: 'PATCH',
+                headers: { 
+                    'Authorization': `Bearer ${user?.token}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({ reason })
+            });
+            if (!res.ok) throw new Error('Failed to reject review');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
+            showToast('Review rejected', 'success');
+            setShowRejectModal(false);
+            setSelectedReview(null);
+            setRejectReason('');
+        },
+        onError: () => {
+            showToast('Failed to reject review', 'error');
+        },
+        onSettled: () => {
+            setRejecting(false);
+        }
+    });
+
+    const replyReviewMutation = useMutation({
+        mutationFn: async ({ id, reply }) => {
+            const res = await fetch(`${API_BASE_URL}/api/reviews/admin/${id}/reply`, {
+                method: 'PATCH',
+                headers: { 
+                    'Authorization': `Bearer ${user?.token}`,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify({ reply })
+            });
+            if (!res.ok) throw new Error('Failed to save reply');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
+            showToast('Admin reply saved', 'success');
+            setShowReplyModal(false);
+            setSelectedReview(null);
+            setReplyText('');
+        },
+        onError: () => {
+            showToast('Failed to save reply', 'error');
+        },
+        onSettled: () => {
+            setReplying(false);
+        }
+    });
+
+    const deleteReviewMutation = useMutation({
+        mutationFn: async (id) => {
+            const res = await fetch(`${API_BASE_URL}/api/reviews/admin/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${user?.token}` },
+                credentials: 'include',
+            });
+            if (!res.ok) throw new Error('Failed to delete review');
+            return res.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['admin-reviews'] });
+            showToast('Review deleted successfully', 'success');
+        },
+        onError: () => {
+            showToast('Failed to delete review', 'error');
+        }
+    });
     const [activeTab, setActiveTab] = useState('pending'); // pending, approved, rejected
 
     // Modal states
@@ -32,128 +151,28 @@ const ReviewsList = () => {
     const [rejectReason, setRejectReason] = useState('');
     const [rejecting, setRejecting] = useState(false);
 
-    const storedUser = localStorage.getItem('lux_user');
-    const user = storedUser ? JSON.parse(storedUser) : null;
-
-    const fetchReviews = async () => {
-        if (!user?.token) return;
-        try {
-            setLoading(true);
-            const res = await fetch(`${API_BASE_URL}/api/reviews/admin`, {
-                headers: { 'Authorization': `Bearer ${user.token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setReviews(data);
-            } else {
-                showToast('Failed to load reviews', 'error');
-            }
-        } catch (err) {
-            console.error('Error fetching reviews:', err);
-            showToast('Error loading reviews', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchReviews();
-    }, [user?.token]);
-
     const handleApprove = async (id) => {
-        if (!user?.token) return;
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/reviews/admin/${id}/approve`, {
-                method: 'PATCH',
-                headers: { 'Authorization': `Bearer ${user.token}` }
-            });
-            if (res.ok) {
-                showToast('Review approved successfully', 'success');
-                // Optimistic UI update
-                setReviews(prev => prev.map(r => r._id === id ? { ...r, isApproved: true, isRejected: false } : r));
-            } else {
-                showToast('Failed to approve review', 'error');
-            }
-        } catch (err) {
-            showToast('Error approving review', 'error');
-        }
+        approveReviewMutation.mutate(id);
     };
 
     const handleRejectSubmit = async (e) => {
         e.preventDefault();
         if (!user?.token || !selectedReview) return;
-        try {
-            setRejecting(true);
-            const res = await fetch(`${API_BASE_URL}/api/reviews/admin/${selectedReview._id}/reject`, {
-                method: 'PATCH',
-                headers: { 
-                    'Authorization': `Bearer ${user.token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ reason: rejectReason })
-            });
-            if (res.ok) {
-                showToast('Review rejected', 'success');
-                setReviews(prev => prev.map(r => r._id === selectedReview._id ? { ...r, isApproved: false, isRejected: true, rejectionReason: rejectReason } : r));
-                setShowRejectModal(false);
-                setSelectedReview(null);
-                setRejectReason('');
-            } else {
-                showToast('Failed to reject review', 'error');
-            }
-        } catch (err) {
-            showToast('Error rejecting review', 'error');
-        } finally {
-            setRejecting(false);
-        }
+        setRejecting(true);
+        rejectReviewMutation.mutate({ id: selectedReview._id, reason: rejectReason });
     };
 
     const handleReplySubmit = async (e) => {
         e.preventDefault();
         if (!user?.token || !selectedReview) return;
-        try {
-            setReplying(true);
-            const res = await fetch(`${API_BASE_URL}/api/reviews/admin/${selectedReview._id}/reply`, {
-                method: 'PATCH',
-                headers: { 
-                    'Authorization': `Bearer ${user.token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ reply: replyText })
-            });
-            if (res.ok) {
-                showToast('Admin reply saved', 'success');
-                setReviews(prev => prev.map(r => r._id === selectedReview._id ? { ...r, adminReply: replyText, adminReplyAt: new Date().toISOString() } : r));
-                setShowReplyModal(false);
-                setSelectedReview(null);
-                setReplyText('');
-            } else {
-                showToast('Failed to save reply', 'error');
-            }
-        } catch (err) {
-            showToast('Error saving reply', 'error');
-        } finally {
-            setReplying(false);
-        }
+        setReplying(true);
+        replyReviewMutation.mutate({ id: selectedReview._id, reply: replyText });
     };
 
     const handleDelete = async (id) => {
         if (!user?.token) return;
         if (!window.confirm('Are you sure you want to permanently delete this review?')) return;
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/reviews/admin/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${user.token}` }
-            });
-            if (res.ok) {
-                showToast('Review deleted successfully', 'success');
-                setReviews(prev => prev.filter(r => r._id !== id));
-            } else {
-                showToast('Failed to delete review', 'error');
-            }
-        } catch (err) {
-            showToast('Error deleting review', 'error');
-        }
+        deleteReviewMutation.mutate(id);
     };
 
     // Filter reviews according to active tab
