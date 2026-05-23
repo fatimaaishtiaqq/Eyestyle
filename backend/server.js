@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import compression from 'compression';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import connectDB from './config/db.js';
 import { dropLegacyIndexes } from './utils/dropIndexes.js';
@@ -54,6 +55,8 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: '100kb' }));
+// Phase 8: Parse httpOnly cookies for JWT auth
+app.use(cookieParser());
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -107,6 +110,17 @@ app.use('/api/forgot-password', forgotPasswordRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/sales', saleRoutes);
 app.use('/api/coupons', couponRoutes);
+
+// Phase 8: Logout route — clears the httpOnly JWT cookie
+app.post('/api/auth/logout', (req, res) => {
+    res.cookie('jwt', '', {
+        httpOnly: true,
+        expires: new Date(0),
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+    });
+    res.json({ message: 'Logged out successfully' });
+});
 
 // WhatsApp admin routes — protected in production
 const whatsappGuard = (req, res, next) => {

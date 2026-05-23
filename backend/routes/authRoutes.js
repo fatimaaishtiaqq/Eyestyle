@@ -9,6 +9,16 @@ const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]
 
 const router = express.Router();
 
+// Phase 5: Strip internal fields — never expose firebaseUid, OTP fields, __v, password
+const sanitizeUser = (user, token) => ({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    isAdmin: user.isAdmin,
+    role: user.role,
+    ...(token ? { token } : {}),
+});
+
 // @desc    Auth user & get token
 // @route   POST /api/auth/login
 // @access  Public
@@ -22,14 +32,7 @@ router.post('/login', async (req, res) => {
 
     if (user && (await user.matchPassword(password))) {
         const token = generateToken(res, user._id);
-        res.json({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            isAdmin: user.isAdmin,
-            role: user.role,
-            token,
-        });
+        res.json(sanitizeUser(user, token));
     } else {
         res.status(401).json({ message: 'Invalid email or password' });
     }
@@ -62,14 +65,7 @@ router.post('/register', async (req, res) => {
 
     if (user) {
         const token = generateToken(res, user._id);
-        res.status(201).json({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            isAdmin: user.isAdmin,
-            role: user.role,
-            token,
-        });
+        res.status(201).json(sanitizeUser(user, token));
     } else {
         res.status(400).json({ message: 'Invalid user data' });
     }
@@ -110,14 +106,7 @@ router.post('/firebase', async (req, res) => {
         }
 
         const token = generateToken(res, user._id);
-        res.status(200).json({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            isAdmin: user.isAdmin,
-            role: user.role,
-            token,
-        });
+        res.status(200).json(sanitizeUser(user, token));
     } catch (error) {
         console.error('Firebase Auth Sync Error:', error);
         res.status(500).json({ message: `Backend Sync Failed: ${error.message}` });
@@ -131,12 +120,7 @@ router.get('/profile', protect, async (req, res) => {
     const user = await User.findById(req.user._id);
 
     if (user) {
-        res.json({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            isAdmin: user.isAdmin
-        });
+        res.json(sanitizeUser(user));
     } else {
         res.status(404).json({ message: 'User not found' });
     }

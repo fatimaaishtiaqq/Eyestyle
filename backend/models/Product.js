@@ -42,5 +42,19 @@ const productSchema = mongoose.Schema({
     isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
+// --- Performance Indexes ---
+// Speeds up category/subcategory filtering + sort by newest
+productSchema.index({ category: 1, createdAt: -1 });
+// Speeds up frame shape + lens type combined filter
+productSchema.index({ frameShape: 1, lensType: 1 });
+// Speeds up isActive filter used across all public queries
+productSchema.index({ isActive: 1 });
+// Speeds up price range filter
+productSchema.index({ price: 1 });
+// Speeds up subcategory filter
+productSchema.index({ subcategory: 1 });
+// Full-text index for keyword search — replaces slow $regex on name
+productSchema.index({ name: 'text', brand: 'text', description: 'text' });
+
 const Product = mongoose.model('Product', productSchema);
 export default Product;

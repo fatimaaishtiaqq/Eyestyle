@@ -14,6 +14,8 @@ router.get('/', async (req, res) => {
         const query = { isActive: true };
         if (req.query.category) query.category = req.query.category;
         const subcategories = await SubCategory.find(query).populate('category', 'name slug').sort({ name: 1 });
+        // Phase 7: Cache subcategories for 5 minutes
+        res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
         res.json(subcategories);
     } catch (error) {
         res.status(500).json({ message: error.message });

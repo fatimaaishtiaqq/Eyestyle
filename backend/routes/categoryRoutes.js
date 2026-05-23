@@ -41,6 +41,8 @@ router.post('/', protect, admin, async (req, res) => {
 router.get('/', async (req, res) => {
     try {
         const categories = await Category.find({ isActive: true }).populate('parent', 'name slug');
+        // Phase 7: Cache for 5 min in browser/CDN, stale-while-revalidate for 10 min
+        res.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
         res.json(categories);
     } catch (error) {
         res.status(500).json({ message: error.message });

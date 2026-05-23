@@ -11,17 +11,33 @@ const router = express.Router();
 
 const isValidObjectId = (v) => v && mongoose.Types.ObjectId.isValid(v) && String(v).length === 24;
 
+// --- Phase 2: In-memory sale cache (60 seconds) ---
+let _saleCache = { data: null, expiresAt: 0 };
+
+const getActiveSales = async () => {
+    const now = Date.now();
+    if (_saleCache.data && now < _saleCache.expiresAt) {
+        return _saleCache.data;
+    }
+    const sales = await Sale.find({
+        startDate: { $lte: new Date(now) },
+        endDate: { $gte: new Date(now) },
+        status: { $ne: 'cancelled' }
+    }).lean();
+    _saleCache = { data: sales, expiresAt: now + 60_000 };
+    return sales;
+};
+
+// Call this whenever a sale is created/updated/cancelled to invalidate cache
+export const invalidateSaleCache = () => { _saleCache = { data: null, expiresAt: 0 }; };
+
 const applyActiveSalesToProducts = async (products) => {
     const isArray = Array.isArray(products);
     const productList = isArray ? products : [products];
     
-    // Fetch all active sales
+    // Use cached active sales instead of hitting DB every time
     const now = new Date();
-    const activeSales = await Sale.find({
-        startDate: { $lte: now },
-        endDate: { $gte: now },
-        status: { $ne: 'cancelled' }
-    }).lean();
+    const activeSales = await getActiveSales();
     
     const decorated = productList.map(product => {
         const pObj = product.toObject ? product.toObject() : { ...product };
@@ -73,6 +89,9 @@ const applyActiveSalesToProducts = async (products) => {
     return isArray ? decorated : decorated[0];
 };
 
+// Public product fields — only what the storefront renders
+const PUBLIC_PRODUCT_FIELDS = 'name price images category subcategory frameShape lensType countInStock description brand variations details numReviews rating isActive';
+
 // @desc    Fetch all products
 // @route   GET /api/products
 // @access  Public
@@ -100,7 +119,9 @@ router.get('/', async (req, res) => {
         const combinedFilters = { ...keyword, ...category, ...frameShapeFilter, ...lensTypeFilter, ...priceFilter };
 
         const count = await Product.countDocuments(combinedFilters);
+        // Phase 3: select only fields the storefront needs
         const products = await Product.find(combinedFilters)
+            .select(PUBLIC_PRODUCT_FIELDS)
             .sort({ createdAt: -1 })
             .limit(pageSize)
             .skip(pageSize * (page - 1))
@@ -113,15 +134,26 @@ router.get('/', async (req, res) => {
     }
 });
 
-// @desc    Get all products (Admin view - no pagination)
-// @route   GET /api/products/admin
+// @desc    Get all products (Admin view - paginated)
+// @route   GET /api/products/admin?page=1&limit=50
 // @access  Private/Admin
 router.get('/admin', protect, admin, async (req, res) => {
     try {
-        const products = await Product.find({}).sort({ createdAt: -1 }).lean();
+        // Phase 4: paginate admin endpoint to avoid fetching all products at once
+        const pageSize = Number(req.query.limit) || 50;
+        const page = Number(req.query.page) || 1;
+        const searchFilter = req.query.keyword
+            ? { name: { $regex: escapeRegex(req.query.keyword), $options: 'i' } }
+            : {};
+        const count = await Product.countDocuments(searchFilter);
+        const products = await Product.find(searchFilter)
+            .sort({ createdAt: -1 })
+            .limit(pageSize)
+            .skip(pageSize * (page - 1))
+            .lean();
         const normalizedProducts = products.map(p => normalizeProductVariationsForResponse(p));
         const decoratedProducts = await applyActiveSalesToProducts(normalizedProducts);
-        res.json(decoratedProducts);
+        res.json({ products: decoratedProducts, page, pages: Math.ceil(count / pageSize), total: count });
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }
@@ -132,7 +164,10 @@ router.get('/admin', protect, admin, async (req, res) => {
 // @access  Public
 router.get('/:id', async (req, res) => {
     try {
-        const product = await Product.findById(req.params.id).lean();
+        // Phase 3: select only storefront-needed fields for single product too
+        const product = await Product.findById(req.params.id)
+            .select(PUBLIC_PRODUCT_FIELDS)
+            .lean();
         if (product) {
             const normalized = normalizeProductVariationsForResponse(product);
             const decorated = await applyActiveSalesToProducts(normalized);
